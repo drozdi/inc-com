@@ -23,3 +23,20 @@ services:
         resource: '../src/Main/'
         exclude:
             - '../src/Main/Entity/'
+    Main\Service\MainManager:
+        public: true
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+    Main\Service\ClaimantManager:
+        public: true
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+    Main\Service\FileManager:
+        public: true
+        lazy: true
+        arguments:
+            $uploadDir: '%upload_dir%'
+        calls:
+            - setContainer: ['@service_container']
