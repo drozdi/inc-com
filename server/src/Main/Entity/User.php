@@ -7,9 +7,6 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 
-use Main\Entity\User\Access;
-use Main\Entity\User\Group as UserGroup;
-use Main\Entity\Group as MainGroup;
 use Main\Repository\UserRepository;
 
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -115,19 +112,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
     private ?self $parent = null;
 
-    #[ORM\ManyToOne(targetEntity: OU::class)]
-    #[ORM\JoinColumn(name: "ou_id", referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
-    private ?OU $ou = null;
-
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Access::class)]
-    private Collection $accesses;
-
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserGroup::class)]
-    private Collection $groups;
-
-    //#[ORM\OneToMany(mappedBy: 'user', targetEntity: StoredAuth::class)]
-    private Collection $storedAuths;
-
     /**
      * @var string[]
      */
@@ -142,9 +126,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
 
     public function __construct () {
         $this->children = new ArrayCollection();
-        $this->accesses = new ArrayCollection();
-        $this->groups = new ArrayCollection();
-        $this->storedAuths = new ArrayCollection();
     }
     public function getId(): ?int {
         return $this->id;
@@ -174,6 +155,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
     public function setEmail(string $email): self {
         $this->email = $email;
 
+        return $this;
+    }
+    public function getStoredHash (): ?string {
+        return $this->storedHash;
+    }
+    public function setStoredHash (?string$storedHash): self {
+        $this->storedHash = $storedHash;
         return $this;
     }
     public function getDateRegister(?string $format = null): \DateTimeInterface|string|null {
@@ -235,13 +223,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
     }
     public function setLoocked (bool$loocked): self {
         $this->loocked = $loocked;
-        return $this;
-    }
-    public function getStoredHash (): ?string {
-        return $this->storedHash;
-    }
-    public function setStoredHash (?string$storedHash): self {
-        $this->storedHash = $storedHash;
         return $this;
     }
     public function getCheckword (): ?string {
@@ -330,14 +311,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
         return $this;
     }
 
-    public function getOu(): ?OU {
-        return $this->ou;
-    }
-    public function setOu(?OU $ou): self {
-        $this->ou = $ou;
-        return $this;
-    }
-
     public function setParent (?self $parent = null): self {
         if ($this->parent && $this->parent !== $parent) {
             $this->parent->removeChild($this);
@@ -372,95 +345,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
         }
         return $this;
     }
-
-    /**
-     * @return Collection<int, UserGroup>
-     */
-    public function getGroups(): Collection {
-        return $this->groups;
-    }
-    public function addGroup(UserGroup $group): self {
-        if (!$this->groups->contains($group)) {
-            $this->groups->add($group);
-            $group->setUser($this);
-        }
-        return $this;
-    }
-    public function removeGroup(UserGroup $group): self {
-        if ($this->groups->removeElement($group)) {
-            // set the owning side to null (unless already changed)
-            if ($group->getUser() === $this) {
-                $group->setUser(null);
-            }
-        }
-        return $this;
-    }
-    public function newGroup (MainGroup $group): UserGroup {
-        $this->addGroup($gu = new UserGroup());
-        $gu->setGroup($group);
-        return $gu;
-    }
-    public function isInclude (MainGroup $group): bool {
-        $res = false;
-        foreach ($this->groups as $ug) {
-            $res = $res || $ug->isGroup($group);
-        }
-        return $res;
-    }
-
-
-    /**
-     * @return Collection<int, StoredAuth>
-     */
-    public function getStoredAuths(): Collection {
-        return $this->storedAuths;
-    }
-    public function addStoredAuth(StoredAuth $storedAuth): self {
-        if (!$this->storedAuths->contains($storedAuth)) {
-            $this->storedAuths->add($storedAuth);
-            $storedAuth->setUser($this);
-        }
-        return $this;
-    }
-    public function removeStoredAuth(StoredAuth $storedAuth): self {
-        if ($this->storedAuths->removeElement($storedAuth)) {
-            // set the owning side to null (unless already changed)
-            if ($storedAuth->getUser() === $this) {
-                $storedAuth->setUser(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Access>
-     */
-    public function getAccesses (): Collection {
-        return $this->accesses;
-    }
-    public function addAccess(Access $access): self {
-        if (!$this->accesses->contains($access)) {
-            $this->accesses->add($access);
-            $access->setUser($this);
-        }
-        return $this;
-    }
-    public function removeAccess(Access $access): self {
-        if ($this->accesses->removeElement($access)) {
-            // set the owning side to null (unless already changed)
-            if ($access->getUser() === $this) {
-                $access->setUser(null);
-            }
-        }
-        return $this;
-    }
-    public function newAccess (Claimant $claimant): Access {
-        $this->addAccess($access = new User\Access());
-        $access->setClaimant($claimant);
-        return $access;
-    }
-
     public function getRoles(): array {
         $roles = $this->roles;
         // guarantee every user at least has ROLE_USER
