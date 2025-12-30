@@ -3,8 +3,8 @@
 namespace IncCom\Entity;
 
 use Main\Entity\User;
-use IncCom\Entity\Account;
-use IncCom\Entity\Category;
+use IncCom\Entity\Transaction;
+use IncCom\Entity\ProductCategory;
 use IncCom\Repository\ProductRepository;
 
 use Doctrine\Common\Collections\ArrayCollection;
@@ -26,12 +26,12 @@ class Product
     private ?\DateTimeInterface $xTimestamp = null;
 
     #[ORM\ManyToOne(targetEntity: Account::class)]
-    #[ORM\JoinColumn(name: "account_id", referencedColumnName: 'id')]
-    private Account $account;
+    #[ORM\JoinColumn(name: "transaction_id", referencedColumnName: 'id')]
+    private Transaction $transaction;
 
-    #[ORM\ManyToOne(targetEntity: Category::class)]
-    #[ORM\JoinColumn(name: "category_id", referencedColumnName: 'id')]
-    private Category $category;
+    #[ORM\ManyToOne(targetEntity: ProductCategory::class)]
+    #[ORM\JoinColumn(name: "product_category_id", referencedColumnName: 'id')]
+    private ProductCategory $productCategory;
 
     #[ORM\Column(name: 'label', length: 255)]
     private string $label;
@@ -56,18 +56,18 @@ class Product
         $this->xTimestamp = $xTimestamp;
         return $this;
     }
-    public function getAccount(): Account {
-        return $this->account;
+    public function getTransaction(): Transaction {
+        return $this->transaction;
     }
-    public function setAccount(Account $account): self {
-        $this->account = $account;
+    public function setTransaction(Transaction $transaction): self {
+        $this->transaction = $transaction;
         return $this;
     }
-    public function getCategory(): Category {
-        return $this->category;
+    public function getProductCategory(): ProductCategory {
+        return $this->productCategory;
     }
-    public function setCategory(Category $category): self {
-        $this->category = $category;
+    public function setProductCategory(ProductCategory $productCategory): self {
+        $this->productCategory = $productCategory;
         return $this;
     }
     public function getLabel(): string {

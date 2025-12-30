@@ -4,7 +4,6 @@ namespace IncCom\Entity;
 
 use Main\Entity\User;
 use IncCom\Entity\Category;
-use IncCom\Entity\AccountType;
 use IncCom\Repository\AccountRepository;
 
 
@@ -36,13 +35,13 @@ class Account
     #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
     private int $sort = 100;
 
-    #[ORM\Column(name: 'label', length: 255, require: true)]
+    #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
     #[ORM\Column(name: 'balance', type: Types::INTEGER, options: ["default" => 0])]
     private int $balance = 100;
 
-    #[Column(type: 'string', enumType: AccountType::class, required: true)]
+    #[Column(type: 'string')]
     private ?string $type;
 
     public function __construct() {
@@ -124,7 +123,7 @@ class Account
     public function getType(): ?string {
         return $this->type;
     }
-    public function setType(AccountType $type): self {
+    public function setType(string $type): self {
         $this->type = $type;
         return $this;
     }

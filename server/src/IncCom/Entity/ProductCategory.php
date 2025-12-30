@@ -2,19 +2,17 @@
 namespace IncCom\Entity;
 
 use Main\Entity\User;
-use IncCom\Entity\Account;
-use IncCom\Entity\CategoryType;
-use IncCom\Repository\CategoryRepository;
+use IncCom\Repository\ProductCategoryRepository;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: CategoryRepository::class)]
-#[ORM\Table(name: 'inccom_category')]
+#[ORM\Entity(repositoryClass: ProductCategoryRepository::class)]
+#[ORM\Table(name: 'inccom_product_category')]
 #[ORM\HasLifecycleCallbacks]
-class Category
+class ProductCategory
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -32,21 +30,21 @@ class Category
     private Collection $children;
 
     #[ORM\ManyToOne(targetEntity: Account::class)]
-    #[ORM\JoinColumn(name: "account_id", referencedColumnName: 'id')]
-    private ?Account $account = null;
+    #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id')]
+    private ?User $owner = null;
 
     #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
     private ?int $sort = 100;
 
-    #[ORM\Column(name: 'label', length: 255, require: true)]
+    #[ORM\Column(name: 'label', length: 255)]
     private string $label;
-
-    #[Column(type: 'string', enumType: CategoryType::class, required: true)]
-    private string $type;
 
     #[ORM\Column(name: '`level`', type: Types::INTEGER, options: ["default" => 0])]
     private ?int $level = 0;
 
+    public function __construct() {
+        $this->children = new ArrayCollection();
+    }
 
     public function getId(): ?int {
         return $this->id;
@@ -63,15 +61,11 @@ class Category
         $this->xTimestamp = $xTimestamp;
         return $this;
     }
-    public function getAccount(): ?Account {
-        return $this->account;
+    public function getOwner(): ?User {
+        return $this->user;
     }
-    public function setAccount(?Account $account): self {
-        if ($this->account) {
-            $this->account->removeCategory($this);
-        }
-        $this->account = $account;
-        $this->account->addCategory($this);
+    public function setOwner(?User $owner): self {
+        $this->owner = $owner;
         return $this;
     }
     public function getSort(): ?int {
@@ -88,13 +82,6 @@ class Category
         $this->label = $label;
         return $this;
     }
-    public function getType(): ?CategoryType {
-        return $this->type;
-    }
-    public function setType(CategoryType $type): self {
-        $this->type = $type;
-        return $this;
-    }
      public function getLevel(): ?int {
         return $this->level;
     }
@@ -104,5 +91,48 @@ class Category
             $child->setLevel($this->level+1);
         }
         return $this;
+    }
+
+    public function getParent(): ?self {
+        return $this->parent;
+    }
+    public function setParent(?self $parent = null): self {
+        if ($this->parent && $this->parent !== $parent) {
+            $this->parent->removeChild($this);
+        }
+        $this->parent = $parent;
+        if ($this->parent) {
+            $this->parent->addChild($this);
+            $this->setOwner($this->parent->getOwner());
+        }
+        if ($this->parent != null) {
+            $this->setLevel($this->parent->getLevel() + 1);
+        }
+        return $this;
+    }
+    public function addChild (self $child): self {
+        if (!$this->children->contains($child)) {
+            $this->children->add($child);
+            $child->setParent($this);
+            $child->setOwner($this->parent);
+        }
+        $child->setLevel($this->level + 1);
+        return $this;
+    }
+    public function removeChild (self $child): self {
+        if ($this->children->removeElement($child)) {
+            if ($child->getParent() === $this) {
+                $child->setParent(null);
+                $child->setLevel(0);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Group>
+     */
+    public function getChildren () {
+        return $this->children;
     }
 }

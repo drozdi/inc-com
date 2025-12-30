@@ -3,7 +3,6 @@ namespace IncCom\Entity;
 
 use Main\Entity\User;
 use IncCom\Entity\Account;
-use IncCom\Entity\CategoryType;
 use IncCom\Repository\CategoryRepository;
 
 use Doctrine\Common\Collections\ArrayCollection;
@@ -31,10 +30,10 @@ class Category
     #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
     private ?int $sort = 100;
 
-    #[ORM\Column(name: 'label', length: 255, require: true)]
+    #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
-    #[Column(type: 'string', enumType: CategoryType::class, required: true)]
+    #[Column(type: 'string')]
     private string $type;
 
 
@@ -76,10 +75,10 @@ class Category
         $this->label = $label;
         return $this;
     }
-    public function getType(): ?CategoryType {
+    public function getType(): ?string {
         return $this->type;
     }
-    public function setType(CategoryType $type): self {
+    public function setType(string $type): self {
         $this->type = $type;
         return $this;
     }

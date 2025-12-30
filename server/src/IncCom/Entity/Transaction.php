@@ -38,7 +38,7 @@ class Transaction
     #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id')]
     private User $owner;
 
-    #[Column(type: 'string', enumType: CategoryType::class, required: true)]
+    #[Column(type: 'string', enumType: CategoryType::class)]
     private string $type;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
