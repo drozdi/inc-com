@@ -1,37 +1,35 @@
-import { createTheme, Flex, Group, Input, MantineProvider, Modal, SimpleGrid, Stack, Table, Tabs } from '@mantine/core'
-import { DatesProvider } from '@mantine/dates'
-import { ModalsProvider } from '@mantine/modals'
-import { Notifications } from '@mantine/notifications'
-import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import 'dayjs/locale/ru'
-import { ContextMenuProvider } from 'mantine-contextmenu'
-import { BrowserRouter } from 'react-router-dom'
-import { Template } from '../layout'
-import { $setting } from '../shared'
+import {
+	createTheme,
+	Flex,
+	Group,
+	Input,
+	MantineProvider,
+	Modal,
+	SimpleGrid,
+	Stack,
+	Table,
+	Tabs,
+} from '@mantine/core';
+import { DatesProvider } from '@mantine/dates';
+import { ModalsProvider } from '@mantine/modals';
+import { Notifications } from '@mantine/notifications';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import 'dayjs/locale/ru';
+import { BrowserRouter } from 'react-router-dom';
+import { $setting } from '../shared';
+import { queryClient } from '../shared/api/query-client';
 
-import inputClasses from './input.module.css'
-import tableClasses from './table.module.css'
+import inputClasses from './input.module.css';
+import tableClasses from './table.module.css';
 
 interface AppProviderProps {
-	children: React.ReactNode
+	children: React.ReactNode;
 }
 
 const theme = createTheme({
 	primaryColor: 'blue',
 	colors: {
-		// dark: [
-		// 	'#a3caf7',
-		// 	'#71adf6',
-		// 	'#4c95f5',
-		// 	'#3886f5',
-		// 	'#2f7ef6',
-		// 	'#246cdc',
-		// 	'#1960c5',
-		// 	'#002650',
-		// 	'#001350',
-		// 	'#000050',
-		// ],
 		primary: [
 			'#e6f6ff',
 			'#d2e7fd',
@@ -116,18 +114,6 @@ const theme = createTheme({
 			'#cb7000',
 			'#b15f00',
 		],
-		// dark: [
-		// 	'#f5f5f5',
-		// 	'#e7e7e7',
-		// 	'#cdcdcd',
-		// 	'#b2b2b2',
-		// 	'#9a9a9a',
-		// 	'#8b8b8b',
-		// 	'#848484',
-		// 	'#717171',
-		// 	'#656565',
-		// 	'#1d1d1d',
-		// ],
 	},
 	breakpoints: {
 		xs: '30em',
@@ -248,39 +234,24 @@ const theme = createTheme({
 			},
 		}),
 	},
-})
+});
 
-const queryCache = new QueryCache({})
-const queryClient = new QueryClient({
-	queryCache,
-	defaultOptions: {
-		queries: {
-			staleTime: 'static',
-			enabled: true,
-			throwOnError: false,
-			retry: false,
-			gcTime: 1000 * 60 * 60,
-		},
-	},
-})
 //import.meta.env.DEV && console.log(queryClient)
 
 export function AppProvider({ children }: AppProviderProps) {
 	return (
 		<BrowserRouter basename={$setting.get('BASE_URL')}>
 			<MantineProvider theme={theme}>
-				<ContextMenuProvider>
-					<DatesProvider settings={{ locale: 'ru' }}>
-						<QueryClientProvider client={queryClient}>
-							<Notifications />
-							<ModalsProvider>
-								<Template.Provider>{children}</Template.Provider>
-							</ModalsProvider>
-							{import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-						</QueryClientProvider>
-					</DatesProvider>
-				</ContextMenuProvider>
+				<DatesProvider settings={{ locale: 'ru' }}>
+					<QueryClientProvider client={queryClient}>
+						<Notifications />
+						<ModalsProvider>{children}</ModalsProvider>
+						{import.meta.env.DEV && (
+							<ReactQueryDevtools initialIsOpen={false} />
+						)}
+					</QueryClientProvider>
+				</DatesProvider>
 			</MantineProvider>
 		</BrowserRouter>
-	)
+	);
 }

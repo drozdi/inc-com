@@ -1,3 +1,3 @@
-export function AppLoader ({children}) {
-	return children
+export function AppLoader({ children }: { children: React.ReactNode }) {
+	return children;
 }

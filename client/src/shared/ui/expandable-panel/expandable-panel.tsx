@@ -1,6 +1,14 @@
-import { Box, Button, Group, LoadingOverlay, Paper, Text } from '@mantine/core'
-import { useState } from 'react'
-import { TbArrowsMaximize, TbArrowsMinimize } from 'react-icons/tb'
+import {
+	Box,
+	Button,
+	Group,
+	LoadingOverlay,
+	Paper,
+	Text,
+	type PaperProps,
+} from '@mantine/core';
+import { useState } from 'react';
+import { TbArrowsMaximize, TbArrowsMinimize } from 'react-icons/tb';
 
 export function ExpandablePanel({
 	title,
@@ -9,25 +17,25 @@ export function ExpandablePanel({
 	keepMounted = true,
 	component,
 	...otherProps
-}: {
-	title: string
-	loading?: boolean
-	keepMounted?: boolean
-	children: React.ReactNode
-	component?: any
+}: PaperProps & {
+	title: string;
+	loading?: boolean;
+	keepMounted?: boolean;
+	children: React.ReactNode;
+	component?: any;
 }) {
 	// Управляем состоянием компонента
-	const [isExpanded, setIsExpanded] = useState(false)
+	const [isExpanded, setIsExpanded] = useState(false);
 
 	// Обработчик переключения состояния
 	const toggleExpanded = () => {
-		setIsExpanded(v => !v)
-	}
+		setIsExpanded((v) => !v);
+	};
 
 	return (
 		<Paper
-			shadow='xl'
-			p='xs'
+			shadow="xl"
+			p="xs"
 			{...otherProps}
 			style={{
 				position: isExpanded ? 'fixed' : 'relative',
@@ -40,13 +48,19 @@ export function ExpandablePanel({
 			}}
 		>
 			<LoadingOverlay visible={loading} zIndex={1000} />
-			<Group justify='space-between' mb='xs'>
+			<Group justify="space-between" mb="xs">
 				<Text fw={500}>{title}</Text>
 				<Button
-					variant='subtle'
-					size='compact-xs'
+					variant="subtle"
+					size="compact-xs"
 					onClick={toggleExpanded}
-					rightSection={isExpanded ? <TbArrowsMinimize size='1rem' /> : <TbArrowsMaximize size='1rem' />}
+					rightSection={
+						isExpanded ? (
+							<TbArrowsMinimize size="1rem" />
+						) : (
+							<TbArrowsMaximize size="1rem" />
+						)
+					}
 				>
 					{isExpanded ? 'Свернуть' : 'Развернуть'}
 				</Button>
@@ -54,10 +68,14 @@ export function ExpandablePanel({
 
 			{/* Содержимое компонента */}
 			{(keepMounted || isExpanded) && (
-				<Box component={component} mih={loading ? 300 : undefined} miw={loading ? 300 : undefined}>
+				<Box
+					component={component}
+					mih={loading ? 300 : undefined}
+					miw={loading ? 300 : undefined}
+				>
 					{children}
 				</Box>
 			)}
 		</Paper>
-	)
+	);
 }

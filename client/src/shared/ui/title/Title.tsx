@@ -1,8 +1,8 @@
-import { Title as MantineTitle } from '@mantine/core'
+import { Title as MantineTitle, type TitleProps } from '@mantine/core';
 
-export function Title({ children, ...props }: Record<string, any>) {
+export function Title({ children, ...props }: TitleProps) {
 	if (children) {
-		return <MantineTitle {...props}>{children}</MantineTitle>
+		return <MantineTitle {...props}>{children}</MantineTitle>;
 	}
-	return ''
+	return '';
 }

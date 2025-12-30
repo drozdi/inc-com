@@ -7,8 +7,6 @@
 
 @import '@mantine/core/styles.layer.css';
 
-@import 'mantine-datatable/styles.layer.css';
-
 /* :root[data-mantine-color-scheme='dark'] {
 	--mantine-color-body: #002650;
 	--mantine-color-text: #ffffffcc;
