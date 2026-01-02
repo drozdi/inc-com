@@ -15,8 +15,6 @@ export const $setting = new Setting(
 		formatDateTimeFull: '%formatDate% %formatTimeFull%',
 		timeReload: 1000 * 60, // 1 минут
 		timeNotification: 500, // 0.5 секунды
-		shiftDayFrom: 30, // для поиска в отчетах
-		shiftDayTo: 30, // для поиска в отчетах
 	},
 	{
 		URL_API: 'http://10.76.10.102:8025/api/v2',

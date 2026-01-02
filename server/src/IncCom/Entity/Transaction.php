@@ -48,11 +48,20 @@ class Transaction
     #[ORM\Column(name: 'date', type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $date;
 
-    #[ORM\Column(name: 'amount', type: Types::INTEGER, options: ["default" => 0])]
+    #[ORM\Column(name: 'amount', type: Types::DECIMAL, precision: 16, scale: 2, options: ["default" => 0.0])]
     private int $amount = 0;
 
     #[ORM\Column(name: 'comment', type: Types::TEXT, nullable: true)]
     private ?string $comment = null;
+
+    #[ORM\Column(name: 'fn', length: 20, nullable: true)]
+    private ?string $fn = null;   
+    
+    #[ORM\Column(name: 'fp', length: 20, nullable: true)]
+    private ?string $fp = null;   
+
+    #[ORM\Column(name: 'fd', length: 20, nullable: true)]
+    private ?string $fd = null;   
 
 
     public function getId(): ?int {
@@ -126,6 +135,30 @@ class Transaction
     }
     public function setType(CategoryType $type): self {
         $this->type = $type;
+        return $this;
+    }
+
+    public function getFn(): ?string {
+        return $this->fn;
+    }
+    public function setFn(?string $fn = null): self {
+        $this->fn = $fn;
+        return $this;
+    }
+
+    public function getFd(): ?string {
+        return $this->fd;
+    }
+    public function setFd(?string $fd = null): self {
+        $this->fd = $fd;
+        return $this;
+    }
+
+    public function getFp(): ?string {
+        return $this->fp;
+    }
+    public function setFp(?string $fp = null): self {
+        $this->fp = $fp;
         return $this;
     }
 }

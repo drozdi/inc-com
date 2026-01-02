@@ -57,9 +57,7 @@ export function MainLayout() {
 							<Divider orientation="vertical" />
 							<Group flex="1">
 								<Template.Slot name="header">
-									<Title order={1} size="h3" fw="400">
-										<Template.Slot name="title" />
-									</Title>
+									<Template.Slot name="title" />
 								</Template.Slot>
 							</Group>
 						</Group>
