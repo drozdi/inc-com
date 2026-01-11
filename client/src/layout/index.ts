@@ -1,2 +1,2 @@
 export * from './context'
-export * from './MainLayout'
+export * from './nain-layout'
