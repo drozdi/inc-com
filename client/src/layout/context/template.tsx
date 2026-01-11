@@ -2,13 +2,7 @@ import { createTemplateContext } from '../../shared/internal/utils';
 
 export const [Template, useTemplateManager] = createTemplateContext();
 
-Template.Title = ({
-	children,
-	...props
-}: {
-	children: React.ReactNode;
-	[key: string]: any;
-}) => {
+Template.Title = ({ children }: { children: React.ReactNode }) => {
 	return <Template slot="title">{children}</Template>;
 };
 

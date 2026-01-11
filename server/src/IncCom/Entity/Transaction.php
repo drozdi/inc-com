@@ -31,18 +31,18 @@ class Transaction
     private Account $account;
 
     #[ORM\ManyToOne(targetEntity: Category::class)]
-    #[ORM\JoinColumn(name: "category_id", referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: "category_id", referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
     private Category $category;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
     private User $owner;
 
     #[Column(type: 'string', enumType: CategoryType::class)]
     private string $type;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
-    #[ORM\JoinColumn(name: "link_id", referencedColumnName: 'id', nullable: true)]
+    #[ORM\JoinColumn(name: "link_id", referencedColumnName: 'id', nullable: true, onDelete: "CASCADE")]
     private ?self $link = null;
 
     #[ORM\Column(name: 'date', type: Types::DATETIME_MUTABLE)]
@@ -55,13 +55,13 @@ class Transaction
     private ?string $comment = null;
 
     #[ORM\Column(name: 'fn', length: 20, nullable: true)]
-    private ?string $fn = null;   
-    
+    private ?string $fn = null;
+
     #[ORM\Column(name: 'fp', length: 20, nullable: true)]
-    private ?string $fp = null;   
+    private ?string $fp = null;
 
     #[ORM\Column(name: 'fd', length: 20, nullable: true)]
-    private ?string $fd = null;   
+    private ?string $fd = null;
 
 
     public function getId(): ?int {
@@ -130,6 +130,7 @@ class Transaction
         $this->comment = $comment;
         return $this;
     }
+
     public function getType(): ?CategoryType {
         return $this->type;
     }

@@ -2,17 +2,17 @@
 namespace IncCom\Entity;
 
 use Main\Entity\User;
-use IncCom\Repository\ProductCategoryRepository;
+use IncCom\Repository\TagRepository;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: ProductCategoryRepository::class)]
-#[ORM\Table(name: 'inccom_product_category')]
+#[ORM\Entity(repositoryClass: TagRepository::class)]
+#[ORM\Table(name: 'inccom_tag')]
 #[ORM\HasLifecycleCallbacks]
-class ProductCategory
+class Tag
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -29,8 +29,8 @@ class ProductCategory
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
     private Collection $children;
 
-    #[ORM\ManyToOne(targetEntity: Account::class)]
-    #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id')]
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id', onDelete: "CASCADE")]
     private ?User $owner = null;
 
     #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]

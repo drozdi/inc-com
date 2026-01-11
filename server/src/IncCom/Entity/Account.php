@@ -20,7 +20,7 @@ class Account
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private readonly int $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true), ORM\Version]
     private ?\DateTimeInterface $xTimestamp = null;
@@ -38,11 +38,11 @@ class Account
     #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
-    #[ORM\Column(name: 'balance', type: Types::INTEGER, options: ["default" => 0])]
+    #[ORM\Column(name: 'balance', type: Types::DECIMAL, precision: 16, scale: 2, options: ["default" => 0.0])]
     private int $balance = 100;
 
-    #[Column(type: 'string')]
-    private ?string $type;
+    #[ORM\Column(name: 'type', type: 'string')]
+    private string $type;
 
     public function __construct() {
         $this->categories = new ArrayCollection();
@@ -62,7 +62,7 @@ class Account
         return $this;
     }
     public function getOwner(): ?User {
-        return $this->user;
+        return $this->owner;
     }
     public function setOwner(?User $owner): self {
         $this->owner = $owner;
@@ -85,7 +85,7 @@ class Account
     public function getLabel(): ?string {
         return $this->label;
     }
-    public function setLabel(string $name): self {
+    public function setLabel(string $label): self {
         $this->label = $label;
         return $this;
     }
@@ -120,7 +120,7 @@ class Account
         return $this->categories;
     }
 
-    public function getType(): ?string {
+    public function getType(): string {
         return $this->type;
     }
     public function setType(string $type): self {

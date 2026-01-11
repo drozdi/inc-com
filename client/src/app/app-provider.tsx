@@ -5,6 +5,7 @@ import {
 	Input,
 	MantineProvider,
 	Modal,
+	Select,
 	SimpleGrid,
 	Stack,
 	Table,
@@ -231,6 +232,11 @@ const theme = createTheme({
 			classNames: inputClasses,
 			defaultProps: {
 				variant: 'underline',
+			},
+		}),
+		Select: Select.extend({
+			defaultProps: {
+				allowDeselect: false,
 			},
 		}),
 	},

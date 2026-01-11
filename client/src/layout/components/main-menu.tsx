@@ -11,16 +11,8 @@ type NavItem = {
 
 const navItems: NavItem[] = [
 	{
-		label: 'Продукты',
-		path: '/products',
-	},
-	{
-		label: 'Документы',
-		path: '/documents',
-	},
-	{
-		label: 'Отчеты',
-		path: '/reports',
+		label: 'Счета',
+		path: '/account',
 	},
 ];
 

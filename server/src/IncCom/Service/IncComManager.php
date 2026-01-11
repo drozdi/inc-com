@@ -4,9 +4,13 @@ namespace IncCom\Service;
 
 use AbstractManager;
 
-use IncCom\Entity\Account;
+use Main\Entity\User;
+use Main\Repository\UserRepository;
 
+use IncCom\Entity\Account;
+use IncCom\Entity\Category;
 use IncCom\Repository\AccountRepository;
+use IncCom\Repository\CategoryRepository;
 
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,155 +43,101 @@ class IncComManager extends AbstractManager  {
         parent::__construct($Validator);
     }
     public function getUserRepository (): ?UserRepository {
+        return $this->getEntityManager()->getRepository(User::class);
+        //return $this->container->getService(UserRepository::class);
+    }
+    public function getAccountRepository (): ?AccountRepository {
         return $this->getEntityManager()->getRepository(Account::class);
         //return $this->container->getService(UserRepository::class);
     }
-    protected function getPasswordHasher (): ?UserPasswordHasherInterface {
-        return $this->container->get('security.user_password_hasher');
-    }
 
     /**
-     * @param mixed|null $user
-     * @param array|null $arUser
+     * @param mixed|null $account
+     * @param array|null $arAccount
      *
      * @throws ValidationFailedException
      *
-     * @return User
+     * @return Account
      */
-    public function user (mixed $user = null, ?array $arUser = null): User {
-        if (is_int($user) && $user > 0) {
-            $user = $this->getUserRepository()->find($user);
-        } elseif (is_array($user)) {
-            $user = $this->getUserRepository()->findOneBy($user);
+    public function account (mixed $account = null, ?array $arAccount = null): Account {
+        if (is_int($account) && $account > 0) {
+            $account = $this->getAccountRepository()->find($account);
+        } elseif (is_array($account)) {
+            $account = $this->getAccountRepository()->findOneBy($account);
         }
-        if (!($user instanceof User)) {
-            $user = new User();
+        if (!($account instanceof Account)) {
+            $account = new Account();
         }
-        if (empty($arUser)) {
-            return $user;
+        if (empty($arAccount)) {
+            return $account;
         }
-
-
-        $account = new Account();
-        $account->setLabel($req['label']);
-        $account->setBalance($req['balance']);
-        $account->setType($req['type']);
-        $account->setOwner($UserRepository->find(1));
-
-
-        if (array_key_exists('active', $arUser)) {
-            $user->setActive((bool)$arUser['active']);
+        if (array_key_exists('label', $arAccount)) {
+            $account->setLabel($arAccount['label']);
         }
-        if (array_key_exists('loocked', $arUser)) {
-            $user->setLoocked((bool)$arUser['loocked']);
+        if (array_key_exists('balance', $arAccount)) {
+            $account->setBalance($arAccount['balance']);
         }
-        if (array_key_exists('activeFrom', $arUser)) {
-            $user->setActiveFrom($arUser['activeFrom']? new \DateTime($arUser['activeFrom']): null);
+        if (array_key_exists('sort', $arAccount)) {
+            $account->setSort($arAccount['sort']);
         }
-        if (array_key_exists('activeTo', $arUser)) {
-            $user->setActiveTo($arUser['activeTo']? new \DateTime($arUser['activeTo']): null);
+        if (array_key_exists('type', $arAccount)) {
+            $account->setType($arAccount['type']);
         }
-        if (array_key_exists('login', $arUser)) {
-            $user->setLogin((string)$arUser['login']);
-        }
-        if (array_key_exists('password', $arUser)) {
-            $user->setPassword((string)$arUser['password']);
-        }
-        if (array_key_exists('email', $arUser)) {
-            $user->setEmail((string)$arUser['email']);
-        }
-        if (array_key_exists('alias', $arUser)) {
-            $user->setAlias((string)$arUser['alias']);
-        }
-        if (array_key_exists('secondName', $arUser)) {
-            $user->setSecondName((string)$arUser['secondName']);
-        }
-        if (array_key_exists('firstName', $arUser)) {
-            $user->setFirstName((string)$arUser['firstName']);
-        }
-        if (array_key_exists('patronymic', $arUser)) {
-            $user->setPatronymic((string)$arUser['patronymic']);
-        }
-        if (array_key_exists('gender', $arUser)) {
-            $user->setGender((string)$arUser['gender']);
-        }
-        if (array_key_exists('description', $arUser)) {
-            $user->setDescription((string)$arUser['description']);
-        }
-        if (array_key_exists('roles', $arUser)) {
-            $user->setRoles((array)$arUser['roles']);
-        }
-        if (array_key_exists('ou', $arUser) && $arUser['ou'] instanceof OU) {
-            $user->setOu($arUser['ou']);
-        } elseif (array_key_exists('ou_id', $arUser) && (int)$arUser['ou_id'] > 0) {
-            $user->setOu($this->ou((int)$arUser['ou_id']));
-        }
-        if (array_key_exists('parent', $arUser) && $arUser['parent'] instanceof User) {
-            $user->setParent($arUser['parent']);
-        } elseif (array_key_exists('parent_id', $arUser) && (int)$arUser['parent_id'] > 0) {
-            $user->setParent($this->user((int)$arUser['parent_id']));
+        if (array_key_exists('owner_id', $arAccount)) {
+            $account->setOwner($this->getUserRepository()->find($arAccount['owner_id']));
         }
 
-
-        if (array_key_exists('accesses', $arUser)) {
-            foreach ($user->getAccesses() as $access) {
-                $arAccess = !empty($arUser['accesses'][$access->getId()])? $arUser['accesses'][$access->getId()]: null;
-                if ($arAccess && (int)$arAccess['level'] > 0) {
-                    $access->setLevel($arAccess['level']);
-                } else {
-                    $user->removeAccess($access);
-                    $this->getEntityManager()->remove($access);
-                }
-                unset($arUser['accesses'][$access->getId()]);
-            }
-            foreach (($arUser['accesses'] ?: array()) as $arAccess) {
-                if ($arAccess && (int)$arAccess['level'] > 0) {
-                    $this->getEntityManager()->persist($access = $user->newAccess($this->claimant((int)$arAccess['claimant_id'])));
-                    $access->setLevel($arAccess['level']);
-                }
-            }
-        }
-
-        if (array_key_exists('groups', $arUser)) {
-            foreach ($user->getGroups() as $gu) {
-                $arGu = !empty($arUser['groups'][$gu->getId()])? $arUser['groups'][$gu->getId()]: null;
-                if ($arGu) {
-                    if (array_key_exists('activeFrom', $arGu)) {
-                        $gu->setActiveFrom($arGu['activeFrom'] ? new \DateTime($arGu['activeFrom']) : null);
-                    }
-                    if (array_key_exists('activeTo', $arGu)) {
-                        $gu->setActiveTo($arGu['activeTo'] ? new \DateTime($arGu['activeTo']) : null);
-                    }
-                } else {
-                    $user->removeGroup($gu);
-                    $this->getEntityManager()->remove($gu);
-                }
-                unset($arUser['groups'][$gu->getId()]);
-            }
-            foreach (($arUser['groups'] ?: array()) as $arGu) {
-                $this->getEntityManager()->persist($gu = $user->newGroup($this->group((int)$arGu['group_id'])));
-                if (array_key_exists('activeFrom', $arGu)) {
-                    $gu->setActiveFrom($arGu['activeFrom'] ? new \DateTime($arGu['activeFrom']) : null);
-                }
-                if (array_key_exists('activeTo', $arGu)) {
-                    $gu->setActiveTo($arGu['activeTo'] ? new \DateTime($arGu['activeTo']) : null);
-                }
-            }
-        }
-
-
-        $errors = $this->getValidator()->validate($user);
-        if ((isset($arUser['password']) || isset($arUser['confirm_password'])) && $arUser['confirm_password'] != $arUser['password']) {
-            $errors->add(new ConstraintViolation("Пароли не совподают", "", [$arUser['password'], $arUser['confirm_password']], "", "password"));
-        }
+        $errors = $this->getValidator()->validate($account);
         if (count($errors) > 0) {
-            throw new ValidationFailedException($arUser, $errors);
+            throw new ValidationFailedException($arAccount, $errors);
         }
-        $this->getUserRepository()->save($user, true);
-        if (isset($arUser['password']) && $arUser['confirm_password'] == $arUser['password']) {
-            $hashedPassword = $this->getPasswordHasher()->hashPassword($user, $arUser['password']);
-            $this->getUserRepository()->upgradePassword($user, $hashedPassword);
+        $this->getAccountRepository()->save($account, true);
+
+        return $account;
+    }
+
+    /**
+     * @param mixed|null $category
+     * @param array|null $arCategory
+     *
+     * @throws ValidationFailedException
+     *
+     * @return Category
+     */
+    public function category (mixed $category = null, ?array $arCategory = null): Category {
+        if (is_int($category) && $category > 0) {
+            $category = $this->getAccountRepository()->find($category);
+        } elseif (is_array($category)) {
+            $category = $this->getAccountRepository()->findOneBy($category);
         }
-        return $user;
+        if (!($category instanceof Category)) {
+            $category = new Category();
+        }
+        if (empty($arCategory)) {
+            return $category;
+        }
+        if (array_key_exists('label', $arCategory)) {
+            $category->setLabel($arCategory['label']);
+        }
+        if (array_key_exists('sort', $arCategory)) {
+            $category->setSort($arCategory['sort']);
+        }
+        if (array_key_exists('type', $arCategory)) {
+            $category->setType($arCategory['type']);
+        }
+        if (array_key_exists('account_id', $arCategory)) {
+            $category->setOwner($this->getAccountRepository()->find($arCategory['account_id']));
+        }
+        if (array_key_exists('owner_id', $arCategory)) {
+            $category->setOwner($this->getUserRepository()->find($arCategory['owner_id']));
+        }
+
+        $errors = $this->getValidator()->validate($category);
+        if (count($errors) > 0) {
+            throw new ValidationFailedException($arCategory, $errors);
+        }
+        $this->getAccountRepository()->save($category, true);
+
+        return $category;
     }
 }

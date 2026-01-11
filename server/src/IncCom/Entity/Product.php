@@ -29,10 +29,6 @@ class Product
     #[ORM\JoinColumn(name: "transaction_id", referencedColumnName: 'id')]
     private Transaction $transaction;
 
-    #[ORM\ManyToOne(targetEntity: ProductCategory::class)]
-    #[ORM\JoinColumn(name: "product_category_id", referencedColumnName: 'id')]
-    private ProductCategory $productCategory;
-
     #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
@@ -61,13 +57,6 @@ class Product
     }
     public function setTransaction(Transaction $transaction): self {
         $this->transaction = $transaction;
-        return $this;
-    }
-    public function getProductCategory(): ProductCategory {
-        return $this->productCategory;
-    }
-    public function setProductCategory(ProductCategory $productCategory): self {
-        $this->productCategory = $productCategory;
         return $this;
     }
     public function getLabel(): string {

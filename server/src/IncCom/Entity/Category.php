@@ -18,14 +18,18 @@ class Category
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private readonly int $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true), ORM\Version]
     private ?\DateTimeInterface $xTimestamp = null;
 
     #[ORM\ManyToOne(targetEntity: Account::class)]
-    #[ORM\JoinColumn(name: "account_id", referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: "account_id", referencedColumnName: 'id', onDelete: "CASCADE")]
     private ?Account $account = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
+    private ?User $owner = null;
 
     #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
     private ?int $sort = 100;
@@ -59,6 +63,13 @@ class Category
         }
         $this->account = $account;
         $this->account->addCategory($this);
+        return $this;
+    }
+    public function getOwner(): ?User {
+        return $this->owner;
+    }
+    public function setOwner(?User $owner): self {
+        $this->owner = $owner;
         return $this;
     }
     public function getSort(): ?int {

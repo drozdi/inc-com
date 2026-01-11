@@ -26,7 +26,7 @@ class AbstractRepository extends ServiceEntityRepository {
         }
         return $query;
     }
-    protected function order (QueryBuilder $query, array $sort = array(), string $n = "en"): QueryBuilder {
+    protected function order (QueryBuilder $query, array $sort = [], string $n = "en"): QueryBuilder {
         if (count($sort) > 0) {
             foreach ($sort as $sortBy) {
                 $order = strtoupper($sortBy['order'])=="DESC"? "DESC": "ASC";
@@ -35,17 +35,17 @@ class AbstractRepository extends ServiceEntityRepository {
         }
         return $query;
     }
-    public function getQueryBuilder (array $filters = array(), array $sort = array(), int $limit = 0, int $offset = 1, string $n = "en"): QueryBuilder {
+    public function getQueryBuilder (array $filters = [], array $sort = [], int $limit = 0, int $offset = 0, string $n = "en"): QueryBuilder {
         $query = $this->createQueryBuilder($n);
         $query = $this->filter($query, $filters, $n);
         $query = $this->order($query, $sort, $n);
         if ($limit > 0) {
             $query->setMaxResults($limit);
-            $query->setFirstResult($limit * ($offset - 1));
+            $query->setFirstResult($limit * $offset);
         }
         return $query;
     }
-    public function findFilter (array $filters = array(), array $sort = array(), int $limit = 0, int $offset = 1, string $n = "en"): array {
+    public function findFilter (array $filters = array(), array $sort = array(), int $limit = 0, int $offset = 0, string $n = "en"): array {
         return $this->getQueryBuilder($filters, $sort, $limit, $offset, $n)->getQuery()->execute();
     }
     public function cnt (array $filters = array()): int {

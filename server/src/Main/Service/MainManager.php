@@ -4,15 +4,9 @@ namespace Main\Service;
 
 use AbstractManager;
 
-use Main\Entity\OU;
 use Main\Entity\User;
-use Main\Entity\Group;
-use Main\Entity\Claimant;
 
-use Main\Repository\OURepository;
 use Main\Repository\UserRepository;
-use Main\Repository\GroupRepository;
-use Main\Repository\ClaimantRepository;
 
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Request;

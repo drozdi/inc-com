@@ -200,7 +200,7 @@ class UserController extends AbstractController {
         }
         return $this->json($user->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'update', methods: ['PATCH'])]
     public function update (int $id, Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $mainManager->getEntityManager()->getConnection()->beginTransaction();

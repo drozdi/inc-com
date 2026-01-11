@@ -3,7 +3,7 @@
 namespace IncCom\Repository;
 
 use AbstractRepository;
-use IncCom\Entity\Account;
+use IncCom\Entity\Category;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -13,21 +13,21 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Doctrine\ORM\QueryBuilder;
 
 /**
- * @extends ServiceEntityRepository<Account>
+ * @extends ServiceEntityRepository<Category>
  *
- * @method Account|null find($id, $lockMode = null, $lockVersion = null)
- * @method Account|null findOneBy(array $criteria, array $orderBy = null)
- * @method Account[]    findAll()
- * @method Account[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Category|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Category|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Category[]    findAll()
+ * @method Category[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class AccountRepository extends AbstractRepository
+class CategoryRepository extends AbstractRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Account::class);
+        parent::__construct($registry, Category::class);
     }
 
-    public function save(Account $entity, bool $flush = false): void
+    public function save(Category $entity, bool $flush = false): void
     {
         if (!(bool)$entity->getId()) {
             $this->getEntityManager()->persist($entity);
@@ -38,7 +38,7 @@ class AccountRepository extends AbstractRepository
         }
     }
 
-    public function remove(Account $entity, bool $flush = false): void
+    public function remove(Category $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
 
