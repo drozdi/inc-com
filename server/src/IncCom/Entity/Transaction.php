@@ -63,6 +63,9 @@ class Transaction
     #[ORM\Column(name: 'fd', length: 20, nullable: true)]
     private ?string $fd = null;
 
+    #[ORM\Column(name: 'loaded', type: Types::BOOLEAN)]
+    private bool $loaded = false;
+
 
     public function getId(): ?int {
         return $this->id;
@@ -160,6 +163,14 @@ class Transaction
     }
     public function setFp(?string $fp = null): self {
         $this->fp = $fp;
+        return $this;
+    }
+
+    public function getLoaded(): bool {
+        return $this->loaded;
+    }
+    public function setLoaded(bool $loaded = false): self {
+        $this->loaded = $loaded;
         return $this;
     }
 }

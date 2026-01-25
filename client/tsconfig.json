@@ -1,7 +1,72 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+	"compilerOptions": {
+		/* Linting */
+		"strict": true,
+
+		// Strict Checks
+		"alwaysStrict": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"strictFunctionTypes": true,
+		"strictBindCallApply": true,
+		"noImplicitThis": true,
+
+		// Linter Checks
+		"noPropertyAccessFromIndexSignature": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+
+		// Advanced
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+
+		"noImplicitUseStrict": false,
+		"suppressExcessPropertyErrors": false,
+		"suppressImplicitAnyIndexErrors": false,
+		"noStrictGenericChecks": false,
+
+		//
+		"verbatimModuleSyntax": true,
+		"moduleDetection": "force",
+		"erasableSyntaxOnly": true,
+		"noUncheckedSideEffectImports": true,
+
+		"composite": true,
+		"allowSyntheticDefaultImports": true,
+
+		"target": "ES2023",
+		"useDefineForClassFields": true,
+		"lib": ["ES2023", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"skipLibCheck": true,
+		"checkJs": true,
+		"allowJs": true,
+
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"jsx": "react-jsx",
+		"paths": {
+			"#test/*": ["./test/*"],
+			"#test": ["./test"],
+			"#dev/*": ["./dev/*"],
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["./src", "electron", "./vite.config.ts"],
+	"exclude": [
+		"dev",
+		"test",
+		"node_modules",
+		"./src/**/*.(spec|test).(js|jsx|mjs|ts|tsx)",
+		"./src/**/*.story.(js|jsx|mjs|ts|tsx)"
+	],
+	"lib": ["WebWorker"]
 }
