@@ -73,35 +73,33 @@ class CategoryController extends AbstractController {
         $req = $request->toArray();
         $IncComManager->getEntityManager()->getConnection()->beginTransaction();
         try {
-            $account = $IncComManager->account(0, $req);
+            $category = $IncComManager->category(0, $req);
             $IncComManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $IncComManager->getEntityManager()->getConnection()->rollBack();
             return $this->json($IncComManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
         return $this->json([
-            'id' => $account->getId(),
-            'x_timestamp' => $account->getXTimestamp('Y-m-d H:i:s'),
-            'owner' => $account->getOwner()->getAlias() ?? '',
-            'owner_id' => $account->getOwner()->getId() ?? '',
-            'label'=> $account->getLabel() ?? '',
-            'balance'=> $account->getBalance() ?? 0,
-            'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'id' => $category->getId(),
+            'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'owner' => $category->getOwner()->getAlias() ?? '',
+            'owner_id' => $category->getOwner()->getId() ?? '',
+            'label'=> $category->getLabel() ?? '',
+            'sort'=> $category->getSort() ?? 100,
+            'type'=> $category->getType() ?? ''
         ], Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'read', methods: ['GET'])]
-    public function detail (int $id, AccountRepository $AccountRepository): JsonResponse {
-        $account = $AccountRepository->find($id);
+    public function detail (int $id, CategoryRepository $CategoryRepository): JsonResponse {
+        $category = $CategoryRepository->find($id);
         return $this->json([
-            'id' => $account->getId(),
-            'x_timestamp' => $account->getXTimestamp('Y-m-d H:i:s'),
-            'owner' => $account->getOwner()->getAlias() ?? '',
-            'owner_id' => $account->getOwner()->getId() ?? '',
-            'label'=> $account->getLabel() ?? '',
-            'balance'=> $account->getBalance() ?? 0,
-            'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'id' => $category->getId(),
+            'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'owner' => $category->getOwner()->getAlias() ?? '',
+            'owner_id' => $category->getOwner()->getId() ?? '',
+            'label'=> $category->getLabel() ?? '',
+            'sort'=> $category->getSort() ?? 100,
+            'type'=> $category->getType() ?? ''
         ]);
     }
     #[Route('/{id}', name: 'update', methods: ['PATCH'])]
@@ -109,37 +107,35 @@ class CategoryController extends AbstractController {
         $req = $request->toArray();
         $IncComManager->getEntityManager()->getConnection()->beginTransaction();
         try {
-            $account = $IncComManager->account((int)$id, $req);
+            $account = $IncComManager->category((int)$id, $req);
             $IncComManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $IncComManager->getEntityManager()->getConnection()->rollBack();
             return $this->json($IncComManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
         return $this->json([
-            'id' => $account->getId(),
-            'x_timestamp' => $account->getXTimestamp('Y-m-d H:i:s'),
-            'owner' => $account->getOwner()->getAlias() ?? '',
-            'owner_id' => $account->getOwner()->getId() ?? '',
-            'label'=> $account->getLabel() ?? '',
-            'balance'=> $account->getBalance() ?? 0,
-            'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'id' => $category->getId(),
+            'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'owner' => $category->getOwner()->getAlias() ?? '',
+            'owner_id' => $category->getOwner()->getId() ?? '',
+            'label'=> $category->getLabel() ?? '',
+            'sort'=> $category->getSort() ?? 100,
+            'type'=> $category->getType() ?? ''
         ], Response::HTTP_OK);
     }
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
-    public function remove (int $id, AccountRepository $AccountRepository): JsonResponse {
-        $account = $AccountRepository->find($id);
+    public function remove (int $id, CategoryRepository $CategoryRepository): JsonResponse {
+        $category = $CategoryRepository->find($id);
         $arr = [
-            'id' => $account->getId(),
-            'x_timestamp' => $account->getXTimestamp('Y-m-d H:i:s'),
-            'owner' => $account->getOwner()->getAlias() ?? '',
-            'owner_id' => $account->getOwner()->getId() ?? '',
-            'label'=> $account->getLabel() ?? '',
-            'balance'=> $account->getBalance() ?? 0,
-            'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'id' => $category->getId(),
+            'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'owner' => $category->getOwner()->getAlias() ?? '',
+            'owner_id' => $category->getOwner()->getId() ?? '',
+            'label'=> $category->getLabel() ?? '',
+            'sort'=> $category->getSort() ?? 100,
+            'type'=> $category->getType() ?? ''
         ];
-        $AccountRepository->remove($account, true);
+        $CategoryRepository->remove($category, true);
         return $this->json($arr, Response::HTTP_OK);
     }
 }

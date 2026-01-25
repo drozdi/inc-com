@@ -51,6 +51,11 @@ class IncComManager extends AbstractManager  {
         //return $this->container->getService(UserRepository::class);
     }
 
+    public function getCategoryRepository (): ?CategoryRepository {
+        return $this->getEntityManager()->getRepository(Category::class);
+        //return $this->container->getService(UserRepository::class);
+    }
+
     /**
      * @param mixed|null $account
      * @param array|null $arAccount
@@ -106,9 +111,9 @@ class IncComManager extends AbstractManager  {
      */
     public function category (mixed $category = null, ?array $arCategory = null): Category {
         if (is_int($category) && $category > 0) {
-            $category = $this->getAccountRepository()->find($category);
+            $category = $this->getCategoryRepository()->find($category);
         } elseif (is_array($category)) {
-            $category = $this->getAccountRepository()->findOneBy($category);
+            $category = $this->getCategoryRepository()->findOneBy($category);
         }
         if (!($category instanceof Category)) {
             $category = new Category();
@@ -130,13 +135,15 @@ class IncComManager extends AbstractManager  {
         }
         if (array_key_exists('owner_id', $arCategory)) {
             $category->setOwner($this->getUserRepository()->find($arCategory['owner_id']));
+        } elseif (!$category->getOwner()) {
+            $category->setOwner($category->getAccount()->getOwner());
         }
 
         $errors = $this->getValidator()->validate($category);
         if (count($errors) > 0) {
             throw new ValidationFailedException($arCategory, $errors);
         }
-        $this->getAccountRepository()->save($category, true);
+        $this->getCategoryRepository()->save($category, true);
 
         return $category;
     }

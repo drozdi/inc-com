@@ -1,5 +1,6 @@
 import { $setting } from '../';
 import { AxiosInterceptor } from '../utils';
+export { queryClient } from './query-client';
 
 export const api = new AxiosInterceptor({
 	baseURL: $setting.get('URL_API'),
