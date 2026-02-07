@@ -1,19 +1,29 @@
-import { Button, Group, NumberInput, Select, Stack, TextInput } from '@mantine/core';
-import { isNotEmpty, useForm } from '@mantine/form';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
 	defaultAccount,
+	useEnumsIcons,
 	useEnumsTypeAccount,
 	useStoreAccounts,
-} from '../../entites/account';
-import { Template } from '../../layout';
+} from '@/entites/inc-com';
+import {
+	Button,
+	ColorInput,
+	Group,
+	NumberInput,
+	Select,
+	Stack,
+	TextInput,
+} from '@mantine/core';
+import { isNotEmpty, useForm } from '@mantine/form';
+import { Template } from '@t';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AccountFormProps {
 	id?: IAccount['id'];
 }
 
 export function AccountForm({ id }: AccountFormProps) {
+	const { dataSelect } = useEnumsIcons();
 	const sa = useStoreAccounts();
 	const navigate = useNavigate();
 	const form = useForm<IAccount>({
@@ -68,6 +78,28 @@ export function AccountForm({ id }: AccountFormProps) {
 				step={0.01}
 				required
 				{...form.getInputProps('balance')}
+			/>
+			<ColorInput
+				label="Цвет"
+				format="hex"
+				swatches={[
+					'#2e2e2e',
+					'#868e96',
+					'#fa5252',
+					'#e64980',
+					'#be4bdb',
+					'#7950f2',
+					'#4c6ef5',
+					'#228be6',
+					'#15aabf',
+					'#12b886',
+					'#40c057',
+					'#82c91e',
+					'#fab005',
+					'#fd7e14',
+				]}
+				key={form.key('color')}
+				{...form.getInputProps('color')}
 			/>
 			<Template.Footer>
 				<Group>

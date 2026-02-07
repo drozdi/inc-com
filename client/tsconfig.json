@@ -57,6 +57,8 @@
 			"#test/*": ["./test/*"],
 			"#test": ["./test"],
 			"#dev/*": ["./dev/*"],
+			"@t/*": ["./srs/shared/layout/*"],
+			"@t": ["./srs/shared/layout"],
 			"@/*": ["./src/*"]
 		}
 	},

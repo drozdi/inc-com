@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,8 +17,8 @@ use Main\Entity\User;
 use Main\Service\ClaimantManager;
 
 #[Route('/api/user_profile', name: 'api_app_user_profile_' )]
-class ApiAccountController extends AbstractController {
-    #[Route('', name: 'detail', methods: ['GET'])]
+class ApiUserProfileController extends AbstractController {
+    #[Route('/', name: 'detail', methods: ['GET'])]
     public function detail (#[CurrentUser] ?User $user): JsonResponse {
         if (null === $user) {
             return $this->json([
@@ -40,7 +39,7 @@ class ApiAccountController extends AbstractController {
             'x_timestamp' => $user->getXTimestamp("Y-m-d H:m:s"),
         ]);
     }
-    #[Route('/map', name: 'map', methods: ['GET'])]
+   /* #[Route('/map', name: 'map', methods: ['GET'])]
     public function map (ClaimantManager $cm): JsonResponse {
         $ret = [];
         foreach ($cm->getMap() as $k => $v) {
@@ -60,7 +59,7 @@ class ApiAccountController extends AbstractController {
             }
         }
         return $this->json($ret);
-    }
+    }*/
     #[Route('/roles', name: 'roles', methods: ['GET'])]
     public function roles (#[CurrentUser] ?User $user): JsonResponse {
         return $this->json($user->getRoles());
@@ -69,7 +68,7 @@ class ApiAccountController extends AbstractController {
     public function options (#[CurrentUser] ?User $user): JsonResponse {
         return $this->json($user->getOptions());
     }
-    #[Route('/options', name: 'options_update', methods: ['PUT'])]
+    #[Route('/options', name: 'options_update', methods: ['PATCH'])]
     public function updateOptions (#[CurrentUser] ?User $user, Request $request, EntityManagerInterface $entityManager): JsonResponse {
         $user->setOptions($request->toArray());
         $entityManager->flush();

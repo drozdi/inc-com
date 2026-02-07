@@ -88,8 +88,16 @@ class IncComManager extends AbstractManager  {
         if (array_key_exists('type', $arAccount)) {
             $account->setType($arAccount['type']);
         }
+        if (array_key_exists('color', $arAccount)) {
+            $account->setColor($arAccount['color']);
+        }
+        if (array_key_exists('icon', $arAccount)) {
+            $account->setIcon($arAccount['icon']);
+        }
         if (array_key_exists('owner_id', $arAccount)) {
-            $account->setOwner($this->getUserRepository()->find($arAccount['owner_id']));
+            $account->setOwner($this->getUserRepository()->find((int)$arAccount['owner_id']));
+        } elseif (array_key_exists('owner', $arAccount) && $arAccount['owner'] instanceof User) {
+            $account->setOwner($arAccount['owner']);
         }
 
         $errors = $this->getValidator()->validate($account);
@@ -127,14 +135,21 @@ class IncComManager extends AbstractManager  {
         if (array_key_exists('sort', $arCategory)) {
             $category->setSort($arCategory['sort']);
         }
+        if (array_key_exists('mcc', $arCategory)) {
+            $category->setMcc((int)$arCategory['mcc']);
+        }
         if (array_key_exists('type', $arCategory)) {
             $category->setType($arCategory['type']);
         }
         if (array_key_exists('account_id', $arCategory)) {
-            $category->setOwner($this->getAccountRepository()->find($arCategory['account_id']));
+            $category->setAccount($this->getAccountRepository()->find((int)$arCategory['account_id']));
+        } elseif (array_key_exists('account', $arCategory) && $arCategory['account'] instanceof Account) {
+            $category->setAccount($arCategory['account']);
         }
         if (array_key_exists('owner_id', $arCategory)) {
-            $category->setOwner($this->getUserRepository()->find($arCategory['owner_id']));
+            $category->setOwner($this->getUserRepository()->find((int)$arCategory['owner_id']));
+        } elseif (array_key_exists('owner', $arCategory) && $arCategory['owner'] instanceof User) {
+            $category->setOwner($arCategory['owner']);
         } elseif (!$category->getOwner()) {
             $category->setOwner($category->getAccount()->getOwner());
         }

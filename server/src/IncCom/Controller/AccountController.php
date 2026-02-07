@@ -12,15 +12,16 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
+use Main\Entity\User;
+use Main\Repository\UserRepository;
 use IncCom\Entity\Account;
 use IncCom\Repository\AccountRepository;
 use IncCom\Service\IncComManager;
-use Main\Repository\UserRepository;
 
-#[Route('/api/inc-com/account', name: 'api_inccom_account_')]
+#[Route('/api/inc-com/account', name: 'api_inc_com_account_')]
 class AccountController extends AbstractController {
     #[Route('/', name: 'list', methods: ['GET'])]
-    public function list (Request $request, AccountRepository $accountRepository): JsonResponse {
+    public function list (Request $request, #[CurrentUser] ?User $user, AccountRepository $accountRepository): JsonResponse {
         $req = [
             'limit' => -1,
             'offset' => 0,
@@ -28,7 +29,9 @@ class AccountController extends AbstractController {
                 'key' => "sort",
                 'order' => "ASC"
             ]],
-            'filters' => []
+            'filters' => [
+                'owner' => $user->getId()
+            ]
         ];
         // var_dump($request->toArray());
         // $req = array_merge([
@@ -57,7 +60,19 @@ class AccountController extends AbstractController {
                 'label'=> $account->getLabel() ?? '',
                 'balance'=> $account->getBalance() ?? 0,
                 'sort'=> $account->getSort() ?? 100,
-                'type'=> $account->getType() ?? ''
+                'type'=> $account->getType() ?? '',
+                'color' => $account->getColor() ?? '',
+                'icon' => $account->getIcon() ?? '',
+                'categories'=> array_map(function ($category) {
+                    return [
+                        'id' => $category->getId(),
+                        'owner' => $category->getOwner()->getAlias() ?? '',
+                        'owner_id' => $category->getOwner()->getId() ?? '',
+                        'label' => $category->getLabel() ?? '',
+                        'sort' => $category->getSort() ?? 100,
+                        'type' => $category->getType() ?? '',
+                    ];
+                }, $account->getCategories()->toArray() ?? [])
             ];
         }
         $start = $req['limit']*($req['offset']-1);
@@ -79,13 +94,12 @@ class AccountController extends AbstractController {
         ]);
     }
     #[Route('/', name: 'create', methods: ['POST'])]
-    public function create (Request $request, IncComManager $IncComManager): JsonResponse {
+    public function create (Request $request, #[CurrentUser] ?User $user, IncComManager $IncComManager): JsonResponse {
         $req = $request->toArray();
         $IncComManager->getEntityManager()->getConnection()->beginTransaction();
         try {
-            $account = $IncComManager->account(0, array_merge($req, [
-                'owner_id' => 1,
-            ]));
+            $req['owner_id'] = $user->getId();
+            $account = $IncComManager->account(0, $req);
             $IncComManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $IncComManager->getEntityManager()->getConnection()->rollBack();
@@ -99,7 +113,9 @@ class AccountController extends AbstractController {
             'label'=> $account->getLabel() ?? '',
             'balance'=> $account->getBalance() ?? 0,
             'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'type'=> $account->getType() ?? '',
+            'color' => $account->getColor() ?? '',
+            'icon' => $account->getIcon() ?? '',
         ], Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'read', methods: ['GET'])]
@@ -113,7 +129,9 @@ class AccountController extends AbstractController {
             'label'=> $account->getLabel() ?? '',
             'balance'=> $account->getBalance() ?? 0,
             'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'type'=> $account->getType() ?? '',
+            'color' => $account->getColor() ?? '',
+            'icon' => $account->getIcon() ?? '',
         ]);
     }
     #[Route('/{id}', name: 'update', methods: ['PATCH'])]
@@ -135,7 +153,9 @@ class AccountController extends AbstractController {
             'label'=> $account->getLabel() ?? '',
             'balance'=> $account->getBalance() ?? 0,
             'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'type'=> $account->getType() ?? '',
+            'color' => $account->getColor() ?? '',
+            'icon' => $account->getIcon() ?? '',
         ], Response::HTTP_OK);
     }
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
@@ -149,7 +169,9 @@ class AccountController extends AbstractController {
             'label'=> $account->getLabel() ?? '',
             'balance'=> $account->getBalance() ?? 0,
             'sort'=> $account->getSort() ?? 100,
-            'type'=> $account->getType() ?? ''
+            'type'=> $account->getType() ?? '',
+            'color' => $account->getColor() ?? '',
+            'icon' => $account->getIcon() ?? '',
         ];
         $AccountRepository->remove($account, true);
         return $this->json($arr, Response::HTTP_OK);

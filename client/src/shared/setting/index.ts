@@ -20,10 +20,10 @@ export const $setting = new Setting(
 		timeNotification: 500, // 0.5 секунды
 	},
 	{
-		URL_API: 'http://localhost:8000/api',
+		URL_API: 'http://127.0.0.1:8000/api',
 		BASE_URL: '/',
-		ACCESS_TOKEN_KEY: '',
-		REFRESH_TOKEN_KEY: '',
+		ACCESS_TOKEN_KEY: 'token.access',
+		REFRESH_TOKEN_KEY: 'token.refresh',
 	},
 	'inc-com',
 );

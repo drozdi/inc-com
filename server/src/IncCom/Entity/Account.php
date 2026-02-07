@@ -44,6 +44,12 @@ class Account
     #[ORM\Column(name: 'type', type: 'string')]
     private string $type;
 
+    #[ORM\Column(name: 'icon', type: 'string')]
+    private string $icon;
+
+    #[ORM\Column(name: 'color', type: 'string')]
+    private string $color;
+
     public function __construct() {
         $this->categories = new ArrayCollection();
     }
@@ -125,6 +131,22 @@ class Account
     }
     public function setType(string $type): self {
         $this->type = $type;
+        return $this;
+    }
+
+    public function getIcon(): string {
+        return $this->icon;
+    }
+    public function setIcon(string $icon): self {
+        $this->icon = $icon;
+        return $this;
+    }
+
+    public function getColor(): string {
+        return $this->color;
+    }
+    public function setColor(string $color): self {
+        $this->color = $color;
         return $this;
     }
 }

@@ -37,7 +37,10 @@ class Category
     #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
-    #[Column(type: 'string')]
+    #[ORM\Column(name: 'mcc', type: Types::INTEGER, nullable: true)]
+    private ?int $mcc = null;
+
+    #[ORM\Column(name: 'type', type: 'string')]
     private string $type;
 
 
@@ -62,7 +65,9 @@ class Category
             $this->account->removeCategory($this);
         }
         $this->account = $account;
-        $this->account->addCategory($this);
+        if ($this->account) {
+            //$this->account->addCategory($this);
+        }
         return $this;
     }
     public function getOwner(): ?User {
@@ -91,6 +96,18 @@ class Category
     }
     public function setType(string $type): self {
         $this->type = $type;
+        return $this;
+    }
+
+    public function getMcc(): ?int {
+        return $this->mcc;
+    }
+
+    /**
+     * @param int|null $mcc
+     */
+    public function setMcc(?int $mcc = null): self {
+        $this->mcc = $mcc;
         return $this;
     }
 }

@@ -1,8 +1,17 @@
-import { ActionIcon, Card, Flex, Group, Menu, SimpleGrid, Text } from '@mantine/core';
+import { useEnumsTypeAccount } from '@/entites/inc-com/hooks';
+import { useStoreAccounts } from '@/entites/inc-com/stores';
+import {
+	ActionIcon,
+	Card,
+	Flex,
+	Group,
+	Menu,
+	SimpleGrid,
+	Text,
+	alpha,
+} from '@mantine/core';
 import { TbAccessPoint, TbDots, TbPlus } from 'react-icons/tb';
-import { NavLink } from 'react-router-dom';
-import { useEnumsTypeAccount } from '../../entites/account/hooks';
-import { useStoreAccounts } from '../../entites/account/store';
+import { Link, NavLink } from 'react-router-dom';
 
 export function AccountList() {
 	const sa = useStoreAccounts();
@@ -15,7 +24,13 @@ export function AccountList() {
 		<SimpleGrid cols={3}>
 			{list.length ? (
 				list.map((account) => (
-					<Card key={account.id} padding="xl" shadow="xl" radius="xl">
+					<Card
+						bg={account.color ? alpha(account.color, 0.5) : ''}
+						key={account.id}
+						padding="xl"
+						shadow="xl"
+						radius="xl"
+					>
 						<Card.Section withBorder inheritPadding py="xs">
 							<Group justify="space-between">
 								<Text fw={500}>
@@ -30,7 +45,12 @@ export function AccountList() {
 									</Menu.Target>
 									<Menu.Dropdown>
 										<Menu.Item>Транзакции</Menu.Item>
-										<Menu.Item>Категории</Menu.Item>
+										<Menu.Item
+											component={Link}
+											to={`/categories/${account.id}`}
+										>
+											Категории
+										</Menu.Item>
 										<Menu.Item>Доход</Menu.Item>
 										<Menu.Item>Расход</Menu.Item>
 										<Menu.Item

@@ -1,6 +1,7 @@
 <?php
 namespace IncCom\Controller;
 
+use Main\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,7 +23,7 @@ use Main\Repository\UserRepository;
 #[Route('/api/inc-com/category', name: 'api_inccom_category_')]
 class CategoryController extends AbstractController {
     #[Route('/', name: 'list', methods: ['GET'])]
-    public function list (Request $request, CategoryRepository $CategoryRepository): JsonResponse {
+    public function list (Request $request, #[CurrentUser] ?User $user, CategoryRepository $CategoryRepository, AccountRepository $AccountRepository): JsonResponse {
         $req = [
             'limit' => -1,
             'offset' => 0,
@@ -30,7 +31,13 @@ class CategoryController extends AbstractController {
                 'key' => "sort",
                 'order' => "ASC"
             ]],
-            'filters' => []
+            'filters' => [
+                'account' => array_map(function ($account) {
+                    return $account->getId();
+                }, $AccountRepository->findFilter([
+                    'owner' => $user->getId()
+                ]))
+            ]
         ];
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
@@ -43,10 +50,14 @@ class CategoryController extends AbstractController {
             $items[] = [
                 'id' => $category->getId(),
                 'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+                'account' => $category->getAccount()->getLabel() ?? '',
                 'account_id' => $category->getAccount()->getId() ?? '',
                 'label'=> $category->getLabel() ?? '',
                 'sort'=> $category->getSort() ?? 100,
-                'type'=> $category->getType() ?? ''
+                'type'=> $category->getType() ?? '',
+                'owner' => $category->getOwner()->getAlias() ?? '',
+                'owner_id' => $category->getOwner()->getId() ?? '',
+                'mcc' => $category->getMcc() ?? '',
             ];
         }
 
@@ -69,10 +80,11 @@ class CategoryController extends AbstractController {
         ]);
     }
     #[Route('/', name: 'create', methods: ['POST'])]
-    public function create (Request $request, IncComManager $IncComManager): JsonResponse {
+    public function create (Request $request, #[CurrentUser] ?User $user, IncComManager $IncComManager): JsonResponse {
         $req = $request->toArray();
         $IncComManager->getEntityManager()->getConnection()->beginTransaction();
         try {
+            $req['owner_id'] = $user->getId();
             $category = $IncComManager->category(0, $req);
             $IncComManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
@@ -82,11 +94,14 @@ class CategoryController extends AbstractController {
         return $this->json([
             'id' => $category->getId(),
             'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'account' => $category->getAccount()->getLabel() ?? '',
+            'account_id' => $category->getAccount()->getId() ?? '',
             'owner' => $category->getOwner()->getAlias() ?? '',
             'owner_id' => $category->getOwner()->getId() ?? '',
             'label'=> $category->getLabel() ?? '',
             'sort'=> $category->getSort() ?? 100,
-            'type'=> $category->getType() ?? ''
+            'type'=> $category->getType() ?? '',
+            'mcc' => $category->getMcc() ?? ''
         ], Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'read', methods: ['GET'])]
@@ -95,11 +110,14 @@ class CategoryController extends AbstractController {
         return $this->json([
             'id' => $category->getId(),
             'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'account' => $category->getAccount()->getLabel() ?? '',
+            'account_id' => $category->getAccount()->getId() ?? '',
             'owner' => $category->getOwner()->getAlias() ?? '',
             'owner_id' => $category->getOwner()->getId() ?? '',
             'label'=> $category->getLabel() ?? '',
             'sort'=> $category->getSort() ?? 100,
-            'type'=> $category->getType() ?? ''
+            'type'=> $category->getType() ?? '',
+            'mcc' => $category->getMcc() ?? ''
         ]);
     }
     #[Route('/{id}', name: 'update', methods: ['PATCH'])]
@@ -107,7 +125,7 @@ class CategoryController extends AbstractController {
         $req = $request->toArray();
         $IncComManager->getEntityManager()->getConnection()->beginTransaction();
         try {
-            $account = $IncComManager->category((int)$id, $req);
+            $category = $IncComManager->category((int)$id, $req);
             $IncComManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $IncComManager->getEntityManager()->getConnection()->rollBack();
@@ -116,11 +134,14 @@ class CategoryController extends AbstractController {
         return $this->json([
             'id' => $category->getId(),
             'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'account' => $category->getAccount()->getLabel() ?? '',
+            'account_id' => $category->getAccount()->getId() ?? '',
             'owner' => $category->getOwner()->getAlias() ?? '',
             'owner_id' => $category->getOwner()->getId() ?? '',
             'label'=> $category->getLabel() ?? '',
             'sort'=> $category->getSort() ?? 100,
-            'type'=> $category->getType() ?? ''
+            'type'=> $category->getType() ?? '',
+            'mcc' => $category->getMcc() ?? ''
         ], Response::HTTP_OK);
     }
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
@@ -129,11 +150,14 @@ class CategoryController extends AbstractController {
         $arr = [
             'id' => $category->getId(),
             'x_timestamp' => $category->getXTimestamp('Y-m-d H:i:s'),
+            'account' => $category->getAccount()->getLabel() ?? '',
+            'account_id' => $category->getAccount()->getId() ?? '',
             'owner' => $category->getOwner()->getAlias() ?? '',
             'owner_id' => $category->getOwner()->getId() ?? '',
             'label'=> $category->getLabel() ?? '',
             'sort'=> $category->getSort() ?? 100,
-            'type'=> $category->getType() ?? ''
+            'type'=> $category->getType() ?? '',
+            'mcc' => $category->getMcc() ?? ''
         ];
         $CategoryRepository->remove($category, true);
         return $this->json($arr, Response::HTTP_OK);

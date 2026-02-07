@@ -1,61 +1,76 @@
-import axios, { type AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import axios, {
+	type AxiosError,
+	type AxiosInstance,
+	type AxiosRequestConfig,
+	type AxiosResponse,
+} from 'axios';
 
 interface IAxiosInterceptorDefault {
-	message401?: string
-	accessToken?: string
-	refreshToken?: string
-	accessTokenKey?: string
-	refreshTokenKey?: string
-	urlRefreshToken?: string | ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>)
+	message401?:
+		| string
+		| ((error: AxiosError, axiosInstance: AxiosInstance) => Promise<boolean>);
+	accessToken?: string;
+	refreshToken?: string;
+	accessTokenKey?: string;
+	refreshTokenKey?: string;
+	urlRefreshToken?:
+		| string
+		| ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>);
 }
 
 interface IAxiosInterceptorConfig extends IAxiosInterceptorDefault, AxiosRequestConfig {
-	handleRequest?: (config: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig>
-	handleResponse?: (error: AxiosError) => any
+	handleRequest?: (
+		config: AxiosRequestConfig,
+	) => AxiosRequestConfig | Promise<AxiosRequestConfig>;
+	handleResponse?: (error: AxiosError) => any;
 }
 
 interface IAxiosInterceptor extends IAxiosInterceptorDefault {
-	axiosInstance: AxiosInstance
-	isRefreshing: boolean
-	refreshSubscribers: ((accessToken: string) => void)[]
+	axiosInstance: AxiosInstance;
+	isRefreshing: boolean;
+	refreshSubscribers: ((accessToken: string) => void)[];
 
 	// Методы HTTP-запросов
-	post: AxiosInstance['post']
-	get: AxiosInstance['get']
-	patch: AxiosInstance['patch']
-	delete: AxiosInstance['delete']
-	head: AxiosInstance['head']
-	options: AxiosInstance['options']
-	put: AxiosInstance['put']
+	post: AxiosInstance['post'];
+	get: AxiosInstance['get'];
+	patch: AxiosInstance['patch'];
+	delete: AxiosInstance['delete'];
+	head: AxiosInstance['head'];
+	options: AxiosInstance['options'];
+	put: AxiosInstance['put'];
 
 	// Методы для работы с токенами
-	setAccessToken(accessToken: string): void
-	setRefreshToken(refreshToken: string): void
-	setTokens(accessToken: string, refreshToken: string): void
-	getAccessToken(): string | null
-	getRefreshToken(): string | null
-	clearTokens(): void
-	refreshTokens(): Promise<any>
+	setAccessToken(accessToken: string): void;
+	setRefreshToken(refreshToken: string): void;
+	setTokens(accessToken: string, refreshToken: string): void;
+	getAccessToken(): string | null;
+	getRefreshToken(): string | null;
+	clearTokens(): void;
+	refreshTokens(): Promise<any>;
 }
 
 export class AxiosInterceptor implements IAxiosInterceptor {
-	public axiosInstance: AxiosInstance
-	public isRefreshing = false
-	public refreshSubscribers: ((accessToken: string) => void)[] = []
-	public message401?: string
-	public accessToken = 'access'
-	public refreshToken = 'refresh'
-	public accessTokenKey?: string
-	public refreshTokenKey?: string
-	public urlRefreshToken?: string | ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>)
+	public axiosInstance: AxiosInstance;
+	public isRefreshing = false;
+	public refreshSubscribers: ((accessToken: string) => void)[] = [];
+	public message401?:
+		| string
+		| ((error: AxiosError, axiosInstance: AxiosInstance) => Promise<boolean>);
+	public accessToken = 'access';
+	public refreshToken = 'refresh';
+	public accessTokenKey?: string;
+	public refreshTokenKey?: string;
+	public urlRefreshToken?:
+		| string
+		| ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>);
 	// Методы HTTP-запросов
-	public post: AxiosInstance['post']
-	public get: AxiosInstance['get']
-	public patch: AxiosInstance['patch']
-	public delete: AxiosInstance['delete']
-	public head: AxiosInstance['head']
-	public options: AxiosInstance['options']
-	public put: AxiosInstance['put']
+	public post: AxiosInstance['post'];
+	public get: AxiosInstance['get'];
+	public patch: AxiosInstance['patch'];
+	public delete: AxiosInstance['delete'];
+	public head: AxiosInstance['head'];
+	public options: AxiosInstance['options'];
+	public put: AxiosInstance['put'];
 	constructor({
 		message401,
 		accessToken,
@@ -69,139 +84,164 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 	}: IAxiosInterceptorConfig = {}) {
 		this.axiosInstance = axios.create({
 			...instanceConfig,
-		})
+		});
+		if (message401) {
+			this.message401 = message401;
+		}
 		if (accessToken) {
-			this.accessToken = accessToken
+			this.accessToken = accessToken;
 		}
 		if (refreshToken) {
-			this.refreshToken = refreshToken
+			this.refreshToken = refreshToken;
 		}
 		if (urlRefreshToken) {
-			this.urlRefreshToken = urlRefreshToken
+			this.urlRefreshToken = urlRefreshToken;
 		}
 
 		if (handleResponse) {
-			this.axiosInstance.interceptors.response.use((response: AxiosResponse) => response, handleResponse)
+			this.axiosInstance.interceptors.response.use(
+				(response: AxiosResponse) => response,
+				handleResponse,
+			);
 		}
 
 		if (accessTokenKey) {
-			this.accessTokenKey = accessTokenKey
+			this.accessTokenKey = accessTokenKey;
 			this.axiosInstance.interceptors.request.use(
 				(config: AxiosRequestConfig) => {
-					const accessToken = this.getAccessToken()
+					const accessToken = this.getAccessToken();
 					if (accessToken) {
-						config.headers.Authorization = `Bearer ${accessToken}`
+						config.headers.Authorization = `Bearer ${accessToken}`;
 					}
-					return config
+					return config;
 				},
-				(error: AxiosError) => Promise.reject(error)
-			)
+				(error: AxiosError) => Promise.reject(error),
+			);
 		}
 
 		if (refreshTokenKey) {
-			this.refreshTokenKey = refreshTokenKey
+			this.refreshTokenKey = refreshTokenKey;
 			this.axiosInstance.interceptors.response.use(
 				(response: AxiosResponse) => response,
 				async (error: AxiosError) => {
-					const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
-
-					if (error.response && error.response.status === 401 && !originalRequest._retry) {
+					const originalRequest = error.config as AxiosRequestConfig & {
+						_retry?: boolean;
+					};
+					if (
+						error.response &&
+						error.response.status === 401 &&
+						(await this._messag401(error)) &&
+						!originalRequest._retry
+					) {
 						if (!this.isRefreshing) {
-							this.isRefreshing = true
-
+							this.isRefreshing = true;
 							try {
-								const newTokens = await this.refreshTokens()
+								const newTokens = await this.refreshTokens();
 
-								this.setAccessToken(newTokens[this.accessToken])
-								this.setRefreshToken(newTokens[this.refreshToken])
+								this.setAccessToken(newTokens[this.accessToken]);
+								this.setRefreshToken(newTokens[this.refreshToken]);
 
-								this.refreshSubscribers.forEach((callback: Function) => callback(newTokens[this.accessToken]))
-								this.refreshSubscribers = []
+								this.refreshSubscribers.forEach((callback: Function) =>
+									callback(this.getAccessToken()),
+								);
+								this.refreshSubscribers = [];
 
-								return this.axiosInstance(originalRequest)
+								return this.axiosInstance(originalRequest);
 							} catch (refreshError) {
-								this.clearTokens()
-								this.refreshSubscribers = []
-								return Promise.reject(refreshError)
+								this.clearTokens();
+								this.refreshSubscribers = [];
+								return Promise.reject(refreshError);
 							} finally {
-								this.isRefreshing = false
+								this.isRefreshing = false;
 							}
 						}
 
-						return new Promise(resolve => {
+						return new Promise((resolve) => {
 							this.refreshSubscribers.push((newAccessToken: string) => {
-								originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-								originalRequest._retry = true
-								resolve(this.axiosInstance(originalRequest))
-							})
-						})
+								originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+								originalRequest._retry = true;
+								resolve(this.axiosInstance(originalRequest));
+							});
+						});
 					}
 
-					return Promise.reject(error)
-				}
-			)
+					return Promise.reject(error);
+				},
+			);
 		}
 
 		if (handleRequest) {
-			this.axiosInstance.interceptors.request.use(handleRequest, (error: AxiosError) => Promise.reject(error))
+			this.axiosInstance.interceptors.request.use(
+				handleRequest,
+				(error: AxiosError) => Promise.reject(error),
+			);
 		}
 
-		this.post = this.axiosInstance.post.bind(this.axiosInstance)
-		this.get = this.axiosInstance.get.bind(this.axiosInstance)
-		this.patch = this.axiosInstance.patch.bind(this.axiosInstance)
-		this.delete = this.axiosInstance.delete.bind(this.axiosInstance)
-		this.head = this.axiosInstance.head.bind(this.axiosInstance)
-		this.options = this.axiosInstance.options.bind(this.axiosInstance)
-		this.put = this.axiosInstance.put.bind(this.axiosInstance)
+		this.post = this.axiosInstance.post.bind(this.axiosInstance);
+		this.get = this.axiosInstance.get.bind(this.axiosInstance);
+		this.patch = this.axiosInstance.patch.bind(this.axiosInstance);
+		this.delete = this.axiosInstance.delete.bind(this.axiosInstance);
+		this.head = this.axiosInstance.head.bind(this.axiosInstance);
+		this.options = this.axiosInstance.options.bind(this.axiosInstance);
+		this.put = this.axiosInstance.put.bind(this.axiosInstance);
+	}
+	async _messag401(error: AxiosError): Promise<boolean> {
+		if (!this.message401) {
+			return true;
+		}
+		if (typeof this.message401 === 'function') {
+			return await this.message401(error, this.axiosInstance);
+		}
+		return error.response.data.message === this.message401;
 	}
 	setAccessToken(accessToken: string): void {
 		if (this.accessTokenKey) {
-			localStorage.setItem(this.accessTokenKey, accessToken)
+			localStorage.setItem(this.accessTokenKey, accessToken);
 		}
 	}
 	setRefreshToken(refreshToken: string): void {
 		if (this.refreshTokenKey) {
-			localStorage.setItem(this.refreshTokenKey, refreshToken)
+			localStorage.setItem(this.refreshTokenKey, refreshToken);
 		}
 	}
 	setTokens(accessToken: string, refreshToken: string): void {
-		this.setAccessToken(accessToken)
-		this.setRefreshToken(refreshToken)
+		this.setAccessToken(accessToken);
+		this.setRefreshToken(refreshToken);
 	}
 	getAccessToken(): string | null {
 		if (this.accessTokenKey) {
-			return localStorage.getItem(this.accessTokenKey)
+			return localStorage.getItem(this.accessTokenKey);
 		}
-		return null
+		return null;
 	}
 	getRefreshToken(): string | null {
 		if (this.refreshTokenKey) {
-			return localStorage.getItem(this.refreshTokenKey)
+			return localStorage.getItem(this.refreshTokenKey);
 		}
-		return null
+		return null;
 	}
 	clearTokens(): void {
 		if (this.accessTokenKey) {
-			localStorage.removeItem(this.accessTokenKey)
+			localStorage.removeItem(this.accessTokenKey);
 		}
 		if (this.refreshTokenKey) {
-			localStorage.removeItem(this.refreshTokenKey)
+			localStorage.removeItem(this.refreshTokenKey);
 		}
 	}
 	async refreshTokens(): Promise<any> {
-		const refreshToken = this.getRefreshToken()
+		const refreshToken = this.getRefreshToken();
 		if (!refreshToken) {
-			throw new Error('No refresh token available')
+			throw new Error('No refresh token available');
 		}
 		if (typeof this.urlRefreshToken === 'function') {
-			return await this.urlRefreshToken(refreshToken, this.axiosInstance)
+			return await this.urlRefreshToken(refreshToken, this.axiosInstance);
 		} else if (typeof this.urlRefreshToken === 'string') {
 			return (
 				await this.axiosInstance.post(this.urlRefreshToken, {
 					refreshToken,
 				})
-			).data
+			).data;
 		}
-		throw new Error('No valid URL or function provided for token refresh')
+		throw new Error('No valid URL or function provided for token refresh');
 	}
 }

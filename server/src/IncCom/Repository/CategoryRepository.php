@@ -27,6 +27,34 @@ class CategoryRepository extends AbstractRepository
         parent::__construct($registry, Category::class);
     }
 
+    protected function filter (QueryBuilder $query, array $filters = array(), string $n = "en"): QueryBuilder {
+        if (array_key_exists('owner', $filters) && null === $filters['owner']) {
+            $query->andWhere($n.'.owner IS NULL');
+        } elseif (!empty($filters['owner']) && is_int($filters['owner']) && $filters['owner'] > 0) {
+            $query->andWhere($this->fieldVal($n.".owner", $filters['owner']));
+        } elseif (!empty($filters['owner']) && is_array($filter = $filters['owner'])) {
+            $query->innerJoin($n.'.owner', $n.'owner');
+            foreach ($filter as $field => $val) {
+                $query->andWhere($this->fieldVal($n."owner.{$field}", $val));
+            }
+        }
+        unset($filters['owner']);
+//        if (array_key_exists('account', $filters) && null === $filters['account']) {
+//            $query->andWhere($n.'.account IS NULL');
+//        } elseif (!empty($filters['account']) && is_int($filters['account']) && $filters['account'] > 0) {
+//            $query->andWhere($this->fieldVal($n.".account", $filters['account']));
+//        } elseif (!empty($filters['account']) && is_array($filter = $filters['account'])) {
+//            $query->innerJoin($n.'.account', $n.'account');
+//            foreach ($filter as $field => $val) {
+//                $query->andWhere($this->fieldVal($n."account.{$field}", $val));
+//            }
+//        }
+//        unset($filters['account']);
+        foreach ($filters as $f => $v) {
+            $query->andWhere($this->fieldVal($n.".{$f}", $v));
+        }
+        return  $query;
+    }
     public function save(Category $entity, bool $flush = false): void
     {
         if (!(bool)$entity->getId()) {
