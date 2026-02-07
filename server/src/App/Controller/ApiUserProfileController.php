@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Main\Entity\User;
 use Main\Service\ClaimantManager;
 
-#[Route('/api/account', name: 'api_app_account_' )]
+#[Route('/api/user_profile', name: 'api_app_user_profile_' )]
 class ApiAccountController extends AbstractController {
     #[Route('', name: 'detail', methods: ['GET'])]
     public function detail (#[CurrentUser] ?User $user): JsonResponse {
@@ -75,7 +75,7 @@ class ApiAccountController extends AbstractController {
         $entityManager->flush();
         return $this->json($user->getOptions());
     }
-    #[Route('', name: 'update', methods: ['PUT'])]
+    #[Route('', name: 'update', methods: ['PATCH'])]
     public function update (Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserPasswordHasherInterface $passwordHasher, #[CurrentUser] ?User $user): JsonResponse {
         $ar = $request->toArray();
         $entityManager->getConnection()->beginTransaction();
