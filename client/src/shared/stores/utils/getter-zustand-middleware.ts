@@ -17,7 +17,8 @@ function shallowEqual(objA: any, objB: any): boolean {
 	}
 
 	for (let i = 0; i < keysA.length; i++) {
-		if (objA[keysA[i]] !== objB[keysA[i]]) {
+		const key = keysA[i]
+		if (key === undefined || objA[key] !== objB[key]) {
 			return false
 		}
 	}
@@ -54,18 +55,18 @@ export function getterZustandMiddleware<
 				const newPartial = partial(get())
 				const mergedState = deepMerge(get(), newPartial)
 				if (!shallowEqual(mergedState, get())) {
-					set(mergedState, true)
+					(set as (state: T, replace: true) => void)(mergedState, true);
 				}
 			} else if (partial !== null && typeof partial === 'object') {
 				const mergedState = deepMerge(get(), partial)
 				if (!shallowEqual(mergedState, get())) {
-					set(mergedState, true)
+					(set as (state: T, replace: true) => void)(mergedState, true);
 				}
 			} else {
-				set(partial, replace)
+				set(partial as T | Partial<T>, replace as false | undefined);
 			}
 		}
 
-		return config(customSet, get, api)
+		return config(customSet as never, get, api)
 	}
 }

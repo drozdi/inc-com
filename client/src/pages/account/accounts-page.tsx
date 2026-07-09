@@ -1,5 +1,1 @@
-import { AccountList } from '@/features/account/list';
-
-export function AccountsPage() {
-	return <AccountList />;
-}
+export { AccountsListPage as AccountsPage } from '@/pages/accounts';

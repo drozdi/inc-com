@@ -4,18 +4,17 @@ namespace IncCom\Entity;
 
 use Main\Entity\User;
 use IncCom\Entity\Tag;
-use IncCom\Entity\Transaction;
-use IncCom\Entity\ProductCategory;
+use IncCom\Entity\Product;
 use IncCom\Repository\ProductRepository;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * @deprecated Use Product::getItemCategories() M2M via inccom_item_item_category instead.
+ */
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ORM\Table(name: 'inccom_product_tag')]
-#[ORM\HasLifecycleCallbacks]
 class ProductTag
 {
     #[ORM\Id]

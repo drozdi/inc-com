@@ -6,7 +6,7 @@ export interface StoreTemplate {
 	unregister: (slotName: string) => void
 }
 
-export const useStoreTemplate = create<StoreTemplate>((set, get, api) => ({
+export const useStoreTemplate = create<StoreTemplate>((set) => ({
 	templates: {},
 	register(slotName, element) {
 		set(state => ({

@@ -1,4 +1,4 @@
-import { useStoreAuth } from '@/entites/auth';
+import { useStoreAuth } from '@/entities/user';
 import { Navigate } from 'react-router-dom';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

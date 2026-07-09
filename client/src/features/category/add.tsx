@@ -1,4 +1,4 @@
-import { useStoreCategories } from '@/entites/inc-com';
+import { useStoreCategories } from '@/entities/transaction-category';
 import { notification } from '@/shared/notification';
 import { ActionIcon, TextInput, type TextInputProps } from '@mantine/core';
 import { useState } from 'react';
@@ -26,7 +26,7 @@ export function CategotyAdd({
 				type,
 				label,
 			})
-			.then((data) => {
+			.then(() => {
 				setNewLabel('');
 			});
 	};

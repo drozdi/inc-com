@@ -1,5 +1,5 @@
-import { useStoreUserProfile } from '@/entites/auth';
-import { useStoreAccounts } from '@/entites/inc-com';
+import { useStoreUserProfile } from '@/entities/user';
+import { useStoreAccounts } from '@/entities/account';
 import { currencyFormat } from '@/shared/utils/currency-format';
 import { Avatar, NavLink, Stack, Text, alpha } from '@mantine/core';
 import { TbAccessPoint } from 'react-icons/tb';

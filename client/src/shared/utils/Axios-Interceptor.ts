@@ -1,8 +1,8 @@
 import axios, {
 	type AxiosError,
 	type AxiosInstance,
-	type AxiosRequestConfig,
 	type AxiosResponse,
+	type InternalAxiosRequestConfig,
 } from 'axios';
 
 interface IAxiosInterceptorDefault {
@@ -18,11 +18,14 @@ interface IAxiosInterceptorDefault {
 		| ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>);
 }
 
-interface IAxiosInterceptorConfig extends IAxiosInterceptorDefault, AxiosRequestConfig {
+interface IAxiosInterceptorConfig extends IAxiosInterceptorDefault {
+	baseURL?: string;
+	timeout?: number;
+	headers?: Record<string, string>;
 	handleRequest?: (
-		config: AxiosRequestConfig,
-	) => AxiosRequestConfig | Promise<AxiosRequestConfig>;
-	handleResponse?: (error: AxiosError) => any;
+		config: InternalAxiosRequestConfig,
+	) => InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>;
+	handleResponse?: (error: AxiosError) => unknown;
 }
 
 interface IAxiosInterceptor extends IAxiosInterceptorDefault {
@@ -108,10 +111,10 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 		if (accessTokenKey) {
 			this.accessTokenKey = accessTokenKey;
 			this.axiosInstance.interceptors.request.use(
-				(config: AxiosRequestConfig) => {
+				(config: InternalAxiosRequestConfig) => {
 					const accessToken = this.getAccessToken();
 					if (accessToken) {
-						config.headers.Authorization = `Bearer ${accessToken}`;
+						config.headers.set('Authorization', `Bearer ${accessToken}`);
 					}
 					return config;
 				},
@@ -124,7 +127,7 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 			this.axiosInstance.interceptors.response.use(
 				(response: AxiosResponse) => response,
 				async (error: AxiosError) => {
-					const originalRequest = error.config as AxiosRequestConfig & {
+					const originalRequest = error.config as InternalAxiosRequestConfig & {
 						_retry?: boolean;
 					};
 					if (
@@ -158,7 +161,10 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 
 						return new Promise((resolve) => {
 							this.refreshSubscribers.push((newAccessToken: string) => {
-								originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+								originalRequest.headers.set(
+									'Authorization',
+									`Bearer ${newAccessToken}`,
+								);
 								originalRequest._retry = true;
 								resolve(this.axiosInstance(originalRequest));
 							});
@@ -192,7 +198,12 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 		if (typeof this.message401 === 'function') {
 			return await this.message401(error, this.axiosInstance);
 		}
-		return error.response.data.message === this.message401;
+		return (
+			typeof error.response?.data === 'object' &&
+			error.response.data !== null &&
+			'message' in error.response.data &&
+			error.response.data.message === this.message401
+		);
 	}
 	setAccessToken(accessToken: string): void {
 		if (this.accessTokenKey) {

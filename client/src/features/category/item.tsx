@@ -1,5 +1,5 @@
-import { useStoreUserProfile } from '@/entites/auth';
-import { useStoreCategories } from '@/entites/inc-com';
+import { useStoreUserProfile } from '@/entities/user';
+import { useStoreCategories } from '@/entities/transaction-category';
 import { ActionIcon, Group, Text, TextInput, Tooltip } from '@mantine/core';
 import { useState } from 'react';
 import { TbFileDots, TbFileLike, TbX } from 'react-icons/tb';

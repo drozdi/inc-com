@@ -1,4 +1,4 @@
-import { useStoreCategories } from '@/entites/inc-com';
+import { useStoreCategories } from '@/entities/transaction-category';
 import { Stack, type StackProps } from '@mantine/core';
 import { useMemo } from 'react';
 import { CategotyItem } from './item';

@@ -8,9 +8,15 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 export default defineConfig({
 	resolve: {
 		alias: {
-			'@t': path.resolve(__dirname as any, './src/shared/layout'),
 			'#test': path.resolve(__dirname, './test'),
 			'#dev': path.resolve(__dirname, './dev'),
+			'@/app': path.resolve(__dirname, './src/app'),
+			'@/pages': path.resolve(__dirname, './src/pages'),
+			'@/layouts': path.resolve(__dirname, './src/layouts'),
+			'@/widgets': path.resolve(__dirname, './src/widgets'),
+			'@/features': path.resolve(__dirname, './src/features'),
+			'@/entities': path.resolve(__dirname, './src/entities'),
+			'@/shared': path.resolve(__dirname, './src/shared'),
 			'@': path.resolve(__dirname, './src'),
 		},
 	},

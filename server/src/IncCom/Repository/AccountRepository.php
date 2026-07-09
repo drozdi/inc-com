@@ -47,4 +47,26 @@ class AccountRepository extends AbstractRepository
         }
     }
 
+    protected function filter(QueryBuilder $query, array $filters = array(), string $n = "en"): QueryBuilder
+    {
+        if (array_key_exists('accessibleTo', $filters)) {
+            $userId = (int) $filters['accessibleTo'];
+            unset($filters['accessibleTo']);
+
+            if ($userId > 0) {
+                $query->leftJoin($n.'.users', $n.'_acc_user');
+                $query->andWhere(
+                    $query->expr()->orX(
+                        $query->expr()->eq("IDENTITY({$n}.owner)", ':accAccessibleUserId'),
+                        $query->expr()->eq($n.'_acc_user.id', ':accAccessibleUserId'),
+                    )
+                );
+                $query->setParameter('accAccessibleUserId', $userId);
+                $query->distinct();
+            }
+        }
+
+        return parent::filter($query, $filters, $n);
+    }
+
 }

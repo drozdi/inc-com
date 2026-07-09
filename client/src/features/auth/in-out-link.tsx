@@ -1,4 +1,4 @@
-import { useStoreAuth } from "@/entites/auth";
+import { useStoreAuth } from '@/entities/user';
 import { ActionIcon } from "@mantine/core";
 import { TbLogin, TbLogout } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";

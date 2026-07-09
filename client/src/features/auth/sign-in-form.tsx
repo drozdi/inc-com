@@ -1,15 +1,15 @@
-import { useStoreAuth } from '@/entites/auth';
+import { useStoreAuth } from '@/entities/user';
 import { Loading } from '@/shared/ui';
 import { Box, Button, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
 
-export const SignInForm = (props) => {
+export const SignInForm = (props: React.ComponentProps<typeof Box>) => {
 	const storeAuth = useStoreAuth();
 	const form = useForm({
 		mode: 'uncontrolled',
 		onSubmitPreventDefault: 'always',
-		name: 'signUp',
+		name: 'signIn',
 		initialValues: {
 			username: '',
 			password: '',
@@ -17,7 +17,13 @@ export const SignInForm = (props) => {
 	});
 	const { isLoading } = storeAuth;
 	const navigate = useNavigate();
-	const handleSubmit = async ({ username, password }) => {
+	const handleSubmit = async ({
+		username,
+		password,
+	}: {
+		username: string;
+		password: string;
+	}) => {
 		const res = await storeAuth.login(username, password);
 		if (true === res) {
 			navigate('/', { replace: true });
@@ -26,9 +32,8 @@ export const SignInForm = (props) => {
 
 	return (
 		<Box {...props}>
-			<Stack<form>
+			<Stack
 				component="form"
-				name="signIn"
 				onSubmit={(event) => {
 					event.preventDefault();
 					form.onSubmit(handleSubmit)();

@@ -9,8 +9,14 @@ use Main\Repository\UserRepository;
 
 use IncCom\Entity\Account;
 use IncCom\Entity\Category;
+use IncCom\Entity\Product;
+use IncCom\Entity\Tag;
+use IncCom\Entity\Transaction;
+use IncCom\Entity\Transfer;
 use IncCom\Repository\AccountRepository;
 use IncCom\Repository\CategoryRepository;
+use IncCom\Repository\ProductRepository;
+use IncCom\Repository\TagRepository;
 
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,6 +48,52 @@ class IncComManager extends AbstractManager  {
     public function __construct (ValidatorInterface $Validator) {
         parent::__construct($Validator);
     }
+
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            BalanceService::class => BalanceService::class,
+            TransactionService::class => TransactionService::class,
+            TransferService::class => TransferService::class,
+            CategoryCopyService::class => CategoryCopyService::class,
+            DeletionGuardService::class => DeletionGuardService::class,
+        ]);
+    }
+
+    public function getBalanceService(): BalanceService
+    {
+        return $this->container->get(BalanceService::class);
+    }
+
+    public function getTransactionService(): TransactionService
+    {
+        return $this->container->get(TransactionService::class);
+    }
+
+    public function getTransferService(): TransferService
+    {
+        return $this->container->get(TransferService::class);
+    }
+
+    public function getCategoryCopyService(): CategoryCopyService
+    {
+        return $this->container->get(CategoryCopyService::class);
+    }
+
+    public function getDeletionGuardService(): DeletionGuardService
+    {
+        return $this->container->get(DeletionGuardService::class);
+    }
+
+    public function transaction(): TransactionService
+    {
+        return $this->getTransactionService();
+    }
+
+    public function transfer(): TransferService
+    {
+        return $this->getTransferService();
+    }
     public function getUserRepository (): ?UserRepository {
         return $this->getEntityManager()->getRepository(User::class);
         //return $this->container->getService(UserRepository::class);
@@ -54,6 +106,101 @@ class IncComManager extends AbstractManager  {
     public function getCategoryRepository (): ?CategoryRepository {
         return $this->getEntityManager()->getRepository(Category::class);
         //return $this->container->getService(UserRepository::class);
+    }
+
+    public function getProductRepository (): ?ProductRepository {
+        return $this->getEntityManager()->getRepository(Product::class);
+    }
+
+    public function getTagRepository (): ?TagRepository {
+        return $this->getEntityManager()->getRepository(Tag::class);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function createTransaction(array $data, User $author): Transaction
+    {
+        return $this->getTransactionService()->create($data, $author);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function updateTransaction(Transaction $transaction, array $data, User $author): Transaction
+    {
+        return $this->getTransactionService()->update($transaction, $data, $author);
+    }
+
+    public function deleteTransaction(Transaction $transaction, User $author): void
+    {
+        $this->getTransactionService()->delete($transaction, $author);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function createTransfer(array $data, User $author): Transfer
+    {
+        return $this->getTransferService()->create($data, $author);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function updateTransfer(Transfer $transfer, array $data, User $author): Transfer
+    {
+        return $this->getTransferService()->update($transfer, $data, $author);
+    }
+
+    public function deleteTransfer(Transfer $transfer, User $author): void
+    {
+        $this->getTransferService()->delete($transfer, $author);
+    }
+
+    /**
+     * @param int[]|null $categoryIds
+     *
+     * @return array{copied: Category[], skipped: array<int, array{name: string, reason: string}>}
+     */
+    public function copyCategories(
+        int $fromAccountId,
+        int $targetAccountId,
+        User $user,
+        ?string $type = null,
+        ?array $categoryIds = null,
+    ): array {
+        return $this->getCategoryCopyService()->copy(
+            $fromAccountId,
+            $targetAccountId,
+            $user,
+            $type,
+            $categoryIds,
+        );
+    }
+
+    public function deleteAccountEntity(Account $account): void
+    {
+        $this->getDeletionGuardService()->assertAccountDeletable($account);
+        $this->getAccountRepository()->remove($account, true);
+    }
+
+    public function deleteCategoryEntity(Category $category): void
+    {
+        $this->getDeletionGuardService()->assertCategoryDeletable($category);
+        $this->getCategoryRepository()->remove($category, true);
+    }
+
+    public function deleteProductEntity(Product $product): void
+    {
+        $this->getDeletionGuardService()->assertItemDeletable($product);
+        $this->getProductRepository()->remove($product, true);
+    }
+
+    public function deleteTagEntity(Tag $tag): void
+    {
+        $this->getDeletionGuardService()->assertItemCategoryDeletable($tag);
+        $this->getTagRepository()->remove($tag, true);
     }
 
     /**
@@ -94,10 +241,23 @@ class IncComManager extends AbstractManager  {
         if (array_key_exists('icon', $arAccount)) {
             $account->setIcon($arAccount['icon']);
         }
+        if (array_key_exists('description', $arAccount)) {
+            $account->setDescription($arAccount['description']);
+        }
+        if (array_key_exists('currency', $arAccount)) {
+            $account->setCurrency($arAccount['currency']);
+        }
+        if (array_key_exists('number', $arAccount)) {
+            $account->setNumber($arAccount['number']);
+        }
         if (array_key_exists('owner_id', $arAccount)) {
-            $account->setOwner($this->getUserRepository()->find((int)$arAccount['owner_id']));
+            $account->setMaster($this->getUserRepository()->find((int)$arAccount['owner_id']));
         } elseif (array_key_exists('owner', $arAccount) && $arAccount['owner'] instanceof User) {
-            $account->setOwner($arAccount['owner']);
+            $account->setMaster($arAccount['owner']);
+        } elseif (array_key_exists('master_id', $arAccount)) {
+            $account->setMaster($this->getUserRepository()->find((int)$arAccount['master_id']));
+        } elseif (array_key_exists('master', $arAccount) && $arAccount['master'] instanceof User) {
+            $account->setMaster($arAccount['master']);
         }
 
         $errors = $this->getValidator()->validate($account);
@@ -135,9 +295,6 @@ class IncComManager extends AbstractManager  {
         if (array_key_exists('sort', $arCategory)) {
             $category->setSort($arCategory['sort']);
         }
-        if (array_key_exists('mcc', $arCategory)) {
-            $category->setMcc((int)$arCategory['mcc']);
-        }
         if (array_key_exists('type', $arCategory)) {
             $category->setType($arCategory['type']);
         }
@@ -147,11 +304,15 @@ class IncComManager extends AbstractManager  {
             $category->setAccount($arCategory['account']);
         }
         if (array_key_exists('owner_id', $arCategory)) {
-            $category->setOwner($this->getUserRepository()->find((int)$arCategory['owner_id']));
+            $category->setCreatedBy($this->getUserRepository()->find((int)$arCategory['owner_id']));
+        } elseif (array_key_exists('created_by_id', $arCategory)) {
+            $category->setCreatedBy($this->getUserRepository()->find((int)$arCategory['created_by_id']));
         } elseif (array_key_exists('owner', $arCategory) && $arCategory['owner'] instanceof User) {
-            $category->setOwner($arCategory['owner']);
-        } elseif (!$category->getOwner()) {
-            $category->setOwner($category->getAccount()->getOwner());
+            $category->setCreatedBy($arCategory['owner']);
+        } elseif (array_key_exists('created_by', $arCategory) && $arCategory['created_by'] instanceof User) {
+            $category->setCreatedBy($arCategory['created_by']);
+        } elseif (!$category->getCreatedBy()) {
+            $category->setCreatedBy($category->getAccount()->getMaster());
         }
 
         $errors = $this->getValidator()->validate($category);

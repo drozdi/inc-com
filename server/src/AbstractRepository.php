@@ -3,6 +3,8 @@
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use IncCom\DTO\PaginatedResponse;
+use IncCom\Service\PaginationService;
 
 class AbstractRepository extends ServiceEntityRepository {
     protected function fieldVal ($field, $val): ?string {
@@ -53,5 +55,22 @@ class AbstractRepository extends ServiceEntityRepository {
         $query = $this->filter($query, $filters, "s");
         $query->select($query->expr()->countDistinct("s"));
         return (int)$query->getQuery()->execute()[0][1];
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @param array<int, array{key: string, order: string}> $sort
+     */
+    public function paginate(
+        int $page = 1,
+        int $size = PaginationService::DEFAULT_SIZE,
+        array $filters = [],
+        array $sort = [],
+        string $n = "en",
+        ?PaginationService $paginationService = null,
+    ): PaginatedResponse {
+        $paginationService ??= new PaginationService();
+
+        return $paginationService->paginate($this, $page, $size, $filters, $sort, $n);
     }
 }

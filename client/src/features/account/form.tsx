@@ -1,9 +1,8 @@
 import {
 	defaultAccount,
-	useEnumsIcons,
 	useEnumsTypeAccount,
 	useStoreAccounts,
-} from '@/entites/inc-com';
+} from '@/entities/account';
 import {
 	Button,
 	ColorInput,
@@ -14,7 +13,7 @@ import {
 	TextInput,
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
-import { Template } from '@t';
+import { Template } from '@/layouts';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,7 +22,6 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ id }: AccountFormProps) {
-	const { dataSelect } = useEnumsIcons();
 	const sa = useStoreAccounts();
 	const navigate = useNavigate();
 	const form = useForm<IAccount>({
@@ -33,10 +31,11 @@ export function AccountForm({ id }: AccountFormProps) {
 			label: isNotEmpty('Заполните название'),
 			type: isNotEmpty('Выберите тип счета'),
 		},
-		enhanceGetInputProps: ({ field, form, inputProps, options }) => {
+		enhanceGetInputProps: ({ field, form }) => {
 			if (field === 'balance' && form.values.id) {
 				return { readOnly: true };
 			}
+			return {};
 		},
 	});
 	const { dataSelect: types } = useEnumsTypeAccount();

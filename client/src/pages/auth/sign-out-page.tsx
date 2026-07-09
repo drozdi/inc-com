@@ -1,4 +1,4 @@
-import { useStoreAuth, useStoreUserProfile } from '@/entites/auth/stores';
+import { useStoreAuth, useStoreUserProfile } from '@/entities/user';
 import { Navigate } from 'react-router-dom';
 
 export const SignOutPage = () => {

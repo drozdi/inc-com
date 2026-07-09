@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		/* Linting */
 		"strict": true,
+		"types": ["vite/client"],
 
 		// Strict Checks
 		"alwaysStrict": true,
@@ -57,8 +58,13 @@
 			"#test/*": ["./test/*"],
 			"#test": ["./test"],
 			"#dev/*": ["./dev/*"],
-			"@t/*": ["./srs/shared/layout/*"],
-			"@t": ["./srs/shared/layout"],
+			"@/app/*": ["./src/app/*"],
+			"@/pages/*": ["./src/pages/*"],
+			"@/layouts/*": ["./src/layouts/*"],
+			"@/widgets/*": ["./src/widgets/*"],
+			"@/features/*": ["./src/features/*"],
+			"@/entities/*": ["./src/entities/*"],
+			"@/shared/*": ["./src/shared/*"],
 			"@/*": ["./src/*"]
 		}
 	},
@@ -68,7 +74,21 @@
 		"test",
 		"node_modules",
 		"./src/**/*.(spec|test).(js|jsx|mjs|ts|tsx)",
-		"./src/**/*.story.(js|jsx|mjs|ts|tsx)"
+		"./src/**/*.story.(js|jsx|mjs|ts|tsx)",
+		"./src/shared/ui/button",
+		"./src/shared/ui/icon",
+		"./src/shared/ui/input",
+		"./src/shared/ui/item",
+		"./src/shared/ui/list",
+		"./src/shared/ui/progress",
+		"./src/shared/ui/spinner",
+		"./src/shared/ui/table",
+		"./src/shared/internal",
+		"./src/shared/zustand",
+		"./src/shared/utils/fns.ts",
+		"./src/shared/utils/is.ts",
+		"./src/shared/utils/csv.ts",
+		"./src/shared/utils/factory-multi-select.tsx"
 	],
 	"lib": ["WebWorker"]
 }

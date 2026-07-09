@@ -17,7 +17,7 @@ class Tag
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private readonly int $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true), ORM\Version]
     private ?\DateTimeInterface $xTimestamp = null;
@@ -33,23 +33,30 @@ class Tag
     #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id', onDelete: "CASCADE")]
     private ?User $owner = null;
 
-    #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
-    private ?int $sort = 100;
-
     #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
-    #[ORM\Column(name: '`level`', type: Types::INTEGER, options: ["default" => 0])]
-    private ?int $level = 0;
+    #[ORM\Column(name: 'keywords', type: Types::TEXT, nullable: true)]
+    private ?string $keywords = null;
+
+    #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $createdAt = null;
 
     public function __construct() {
         $this->children = new ArrayCollection();
     }
 
+    #[ORM\PrePersist]
+    public function onPrePersist(): void
+    {
+        if ($this->createdAt === null) {
+            $this->createdAt = new \DateTime();
+        }
+    }
+
     public function getId(): ?int {
         return $this->id;
     }
-
 
     public function getXTimestamp(?string $format = null): \DateTimeInterface|string|null {
         if (null != $format && null != $this->xTimestamp) {
@@ -61,35 +68,67 @@ class Tag
         $this->xTimestamp = $xTimestamp;
         return $this;
     }
+
+    public function getUser(): ?User {
+        return $this->owner;
+    }
+    public function setUser(?User $user): self {
+        $this->owner = $user;
+        return $this;
+    }
+
+    /**
+     * @deprecated Use getUser() instead.
+     */
     public function getOwner(): ?User {
-        return $this->user;
+        return $this->getUser();
     }
+
+    /**
+     * @deprecated Use setUser() instead.
+     */
     public function setOwner(?User $owner): self {
-        $this->owner = $owner;
-        return $this;
+        return $this->setUser($owner);
     }
-    public function getSort(): ?int {
-        return $this->sort;
-    }
-    public function setSort(int $sort): self {
-        $this->sort = $sort;
-        return $this;
-    }
-    public function getLabel(): string {
+
+    public function getName(): string {
         return $this->label;
     }
-    public function setLabel(string $label): self {
-        $this->label = $label;
+    public function setName(string $name): self {
+        $this->label = $name;
         return $this;
     }
-     public function getLevel(): ?int {
-        return $this->level;
+
+    /**
+     * @deprecated Use getName() instead.
+     */
+    public function getLabel(): string {
+        return $this->getName();
     }
-    public function setLevel(int $level): self {
-        $this->level = $level;
-        foreach ($this->children as $child) {
-            $child->setLevel($this->level+1);
+
+    /**
+     * @deprecated Use setName() instead.
+     */
+    public function setLabel(string $label): self {
+        return $this->setName($label);
+    }
+
+    public function getKeywords(): ?string {
+        return $this->keywords;
+    }
+    public function setKeywords(?string $keywords): self {
+        $this->keywords = $keywords;
+        return $this;
+    }
+
+    public function getCreatedAt(?string $format = null): \DateTimeInterface|string|null {
+        if (null != $format && null != $this->createdAt) {
+            return $this->createdAt->format($format);
         }
+        return $this->createdAt;
+    }
+    public function setCreatedAt(?\DateTimeInterface $createdAt): self {
+        $this->createdAt = $createdAt;
         return $this;
     }
 
@@ -103,36 +142,33 @@ class Tag
         $this->parent = $parent;
         if ($this->parent) {
             $this->parent->addChild($this);
-            $this->setOwner($this->parent->getOwner());
-        }
-        if ($this->parent != null) {
-            $this->setLevel($this->parent->getLevel() + 1);
+            $this->setUser($this->parent->getUser());
         }
         return $this;
     }
-    public function addChild (self $child): self {
+    public function addChild(self $child): self {
         if (!$this->children->contains($child)) {
             $this->children->add($child);
             $child->setParent($this);
-            $child->setOwner($this->parent);
+            if ($this->getUser()) {
+                $child->setUser($this->getUser());
+            }
         }
-        $child->setLevel($this->level + 1);
         return $this;
     }
-    public function removeChild (self $child): self {
+    public function removeChild(self $child): self {
         if ($this->children->removeElement($child)) {
             if ($child->getParent() === $this) {
                 $child->setParent(null);
-                $child->setLevel(0);
             }
         }
         return $this;
     }
 
     /**
-     * @return Collection<int, Group>
+     * @return Collection<int, self>
      */
-    public function getChildren () {
+    public function getChildren(): Collection {
         return $this->children;
     }
 }

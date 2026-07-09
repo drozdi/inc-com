@@ -29,7 +29,7 @@ class Category
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: "owner_id", referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
-    private ?User $owner = null;
+    private ?User $createdBy = null;
 
     #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
     private ?int $sort = 100;
@@ -37,12 +37,19 @@ class Category
     #[ORM\Column(name: 'label', length: 255)]
     private string $label;
 
-    #[ORM\Column(name: 'mcc', type: Types::INTEGER, nullable: true)]
-    private ?int $mcc = null;
+    #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $createdAt = null;
 
     #[ORM\Column(name: 'type', type: 'string')]
     private string $type;
 
+    #[ORM\PrePersist]
+    public function onPrePersist(): void
+    {
+        if ($this->createdAt === null) {
+            $this->createdAt = new \DateTime();
+        }
+    }
 
     public function getId(): ?int {
         return $this->id;
@@ -70,13 +77,40 @@ class Category
         }
         return $this;
     }
-    public function getOwner(): ?User {
-        return $this->owner;
+
+    public function getCreatedBy(): ?User {
+        return $this->createdBy;
     }
-    public function setOwner(?User $owner): self {
-        $this->owner = $owner;
+    public function setCreatedBy(?User $createdBy): self {
+        $this->createdBy = $createdBy;
         return $this;
     }
+
+    /**
+     * @deprecated Use getCreatedBy() instead.
+     */
+    public function getOwner(): ?User {
+        return $this->getCreatedBy();
+    }
+
+    /**
+     * @deprecated Use setCreatedBy() instead.
+     */
+    public function setOwner(?User $owner): self {
+        return $this->setCreatedBy($owner);
+    }
+
+    public function getCreatedAt(?string $format = null): \DateTimeInterface|string|null {
+        if (null != $format && null != $this->createdAt) {
+            return $this->createdAt->format($format);
+        }
+        return $this->createdAt;
+    }
+    public function setCreatedAt(?\DateTimeInterface $createdAt): self {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
     public function getSort(): ?int {
         return $this->sort;
     }
@@ -96,18 +130,6 @@ class Category
     }
     public function setType(string $type): self {
         $this->type = $type;
-        return $this;
-    }
-
-    public function getMcc(): ?int {
-        return $this->mcc;
-    }
-
-    /**
-     * @param int|null $mcc
-     */
-    public function setMcc(?int $mcc = null): self {
-        $this->mcc = $mcc;
         return $this;
     }
 }
