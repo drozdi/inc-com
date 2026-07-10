@@ -404,7 +404,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
         // $this->plainPassword = null;
     }
     public function getUserIdentifier(): string {
-        return (string)$this->login;
+        return (string)$this->email;
     }
 
     public function setSalt(?string $salt): self {
@@ -424,7 +424,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
 
 
     public function __toString(): string {
-        return sprintf("%s (%s)", $this->login, $this->alias);
+        return sprintf("%s (%s)", $this->email, $this->alias);
     }
     /**
      * @return mixed[]
