@@ -1,6 +1,7 @@
 export * from './api/account';
 export * from './api/queries';
 export * from './hooks/use-enums-type-account';
+export * from './hooks/use-enums-currency';
 export * from './hooks/use-enums-icons';
 export * from './model/defaults';
 export * from './model/store';

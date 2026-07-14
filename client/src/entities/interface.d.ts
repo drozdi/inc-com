@@ -90,6 +90,8 @@ interface IAccount {
 
 	icon: string;
 
+	currency: string;
+
 	isMaster?: boolean;
 
 	participants?: IAccountParticipant[];

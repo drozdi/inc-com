@@ -9,4 +9,5 @@ export const defaultAccount: IAccount = {
 	type: '',
 	color: '',
 	icon: '',
+	currency: 'RUB',
 };

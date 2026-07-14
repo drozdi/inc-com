@@ -22,7 +22,7 @@ class CreateAccountRequest
 
     #[Assert\NotBlank(message: 'Currency is required')]
     #[Assert\Length(exactly: 3, exactMessage: 'Currency must be exactly 3 characters')]
-    public ?string $currency = null;
+    public ?string $currency = 'RUB';
 
     public ?int $order = null;
 }

@@ -45,8 +45,8 @@ class Account
     #[ORM\Column(name: 'description', type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(name: 'currency', length: 3, options: ["default" => 'USD'])]
-    private string $currency = 'USD';
+    #[ORM\Column(name: 'currency', length: 3, options: ["default" => 'RUB'])]
+    private string $currency = 'RUB';
 
     #[ORM\Column(name: 'number', length: 255, nullable: true)]
     private ?string $number = null;

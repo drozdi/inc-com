@@ -1,5 +1,6 @@
 import {
 	defaultAccount,
+	useEnumsCurrency,
 	useEnumsTypeAccount,
 	useStoreAccounts,
 } from '@/entities/account';
@@ -30,6 +31,7 @@ export function AccountForm({ id }: AccountFormProps) {
 		validate: {
 			label: isNotEmpty('Заполните название'),
 			type: isNotEmpty('Выберите тип счета'),
+			currency: isNotEmpty('Выберите валюту'),
 		},
 		enhanceGetInputProps: ({ field, form }) => {
 			if (field === 'balance' && form.values.id) {
@@ -39,6 +41,7 @@ export function AccountForm({ id }: AccountFormProps) {
 		},
 	});
 	const { dataSelect: types } = useEnumsTypeAccount();
+	const { dataSelect: currencies } = useEnumsCurrency();
 
 	async function handleSave({ id, ...data }: IAccount) {
 		if (id) {
@@ -70,6 +73,14 @@ export function AccountForm({ id }: AccountFormProps) {
 				required
 				data={types}
 				{...form.getInputProps('type')}
+			/>
+			<Select
+				label="Валюта"
+				key={form.key('currency')}
+				required
+				searchable
+				data={currencies}
+				{...form.getInputProps('currency')}
 			/>
 			<NumberInput
 				label="Баланс"
