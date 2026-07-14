@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+PHP="${PHP:-/c/OSPanel/modules/PHP-8.3/php.exe}"
+
+echo "Removing var/cache/dev..."
+rm -rf var/cache/dev
+
+echo "Clearing Symfony cache..."
+"$PHP" bin/console cache:clear --no-warmup
+
+echo "Warming up cache..."
+"$PHP" bin/console cache:warmup
+
+echo "Done."

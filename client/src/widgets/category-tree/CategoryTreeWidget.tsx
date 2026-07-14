@@ -1,13 +1,17 @@
 import {
 	buildItemCategoriesChildParams,
+	ITEM_CATEGORIES_ALL_PARAMS,
 	useItemCategoriesQuery,
 	useItemCategoryCreate,
 	useItemCategoryDelete,
 	useItemCategoryUpdate,
 } from '@/entities/item-category';
 import type { IItemCategory } from '@/entities/item-category/model/types';
+import { notification } from '@/shared/notification';
+import { getErrorMessage } from '@/shared/utils/error';
 import {
 	ActionIcon,
+	Box,
 	Group,
 	Loader,
 	Stack,
@@ -17,12 +21,52 @@ import {
 	Tooltip,
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
-import { useMemo, useState } from 'react';
-import { TbCheck, TbPencil, TbPlus, TbTrash, TbX } from 'react-icons/tb';
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useMemo,
+	useState,
+	type DragEvent,
+} from 'react';
+import {
+	TbCheck,
+	TbGripVertical,
+	TbPencil,
+	TbPlus,
+	TbTrash,
+	TbX,
+} from 'react-icons/tb';
+import {
+	buildCategoryParentMap,
+	canMoveCategoryToParent,
+	type CategoryParentMap,
+} from './category-tree-dnd';
+import classes from './CategoryTreeWidget.module.css';
 
 interface CategoryFormValues {
 	name: string;
 	keywords: string[];
+}
+
+interface CategoryDragContextValue {
+	draggedId: number | null;
+	setDraggedId: (id: number | null) => void;
+	dropTargetId: number | 'root' | null;
+	setDropTargetId: (id: number | 'root' | null) => void;
+	parentById: CategoryParentMap;
+	moveCategory: (categoryId: number, newParentId: number | null) => Promise<void>;
+	isMoving: boolean;
+}
+
+const CategoryDragContext = createContext<CategoryDragContextValue | null>(null);
+
+function useCategoryDragContext() {
+	const context = useContext(CategoryDragContext);
+	if (!context) {
+		throw new Error('CategoryDragContext is not available');
+	}
+	return context;
 }
 
 interface AddChildFormProps {
@@ -131,6 +175,15 @@ function CategoryRow({
 	category: IItemCategory;
 	level: number;
 }) {
+	const {
+		draggedId,
+		setDraggedId,
+		dropTargetId,
+		setDropTargetId,
+		parentById,
+		moveCategory,
+		isMoving,
+	} = useCategoryDragContext();
 	const [isEdit, setIsEdit] = useState(false);
 	const [showAddChild, setShowAddChild] = useState(false);
 	const updateMutation = useItemCategoryUpdate();
@@ -143,6 +196,13 @@ function CategoryRow({
 		},
 		validate: { name: isNotEmpty('Введите название') },
 	});
+
+	const isDragging = draggedId === category.id;
+	const isDropTarget = dropTargetId === category.id;
+	const canAcceptDrop =
+		draggedId !== null &&
+		draggedId !== category.id &&
+		canMoveCategoryToParent(draggedId, category.id, parentById);
 
 	async function handleSave(values: CategoryFormValues) {
 		await updateMutation.mutateAsync({
@@ -165,75 +225,134 @@ function CategoryRow({
 		setIsEdit(true);
 	}
 
+	function handleDragStart(event: DragEvent<HTMLDivElement>) {
+		if (isEdit || isMoving) {
+			event.preventDefault();
+			return;
+		}
+		event.dataTransfer.effectAllowed = 'move';
+		event.dataTransfer.setData('text/plain', String(category.id));
+		setDraggedId(category.id);
+	}
+
+	function handleDragEnd() {
+		setDraggedId(null);
+		setDropTargetId(null);
+	}
+
+	function handleDragOver(event: DragEvent<HTMLDivElement>) {
+		if (!canAcceptDrop) {
+			return;
+		}
+		event.preventDefault();
+		event.dataTransfer.dropEffect = 'move';
+		setDropTargetId(category.id);
+	}
+
+	function handleDragLeave() {
+		if (dropTargetId === category.id) {
+			setDropTargetId(null);
+		}
+	}
+
+	async function handleDrop(event: DragEvent<HTMLDivElement>) {
+		event.preventDefault();
+		setDropTargetId(null);
+		if (draggedId === null || !canAcceptDrop) {
+			return;
+		}
+		await moveCategory(draggedId, category.id);
+		setDraggedId(null);
+	}
+
 	return (
 		<Stack gap="xs">
-			{isEdit ? (
-				<form onSubmit={form.onSubmit(handleSave)}>
-					<Stack gap="xs">
-						<Group align="flex-end" wrap="nowrap">
-							<TextInput
-								label="Название"
-								style={{ flex: 1 }}
-								{...form.getInputProps('name')}
+			<Box
+				className={`${classes.row} ${isDragging ? classes.rowDragging : ''} ${isDropTarget && canAcceptDrop ? classes.rowDropTarget : ''}`}
+				draggable={!isEdit && !isMoving}
+				onDragStart={handleDragStart}
+				onDragEnd={handleDragEnd}
+				onDragOver={handleDragOver}
+				onDragLeave={handleDragLeave}
+				onDrop={handleDrop}
+			>
+				{isEdit ? (
+					<form onSubmit={form.onSubmit(handleSave)}>
+						<Stack gap="xs">
+							<Group align="flex-end" wrap="nowrap">
+								<TextInput
+									label="Название"
+									style={{ flex: 1 }}
+									{...form.getInputProps('name')}
+								/>
+								<ActionIcon
+									type="submit"
+									color="green"
+									loading={updateMutation.isPending}
+									aria-label="Сохранить"
+								>
+									<TbCheck />
+								</ActionIcon>
+								<ActionIcon onClick={() => setIsEdit(false)} aria-label="Отмена">
+									<TbX />
+								</ActionIcon>
+							</Group>
+							<TagsInput
+								label="Ключевые слова"
+								placeholder="Введите слово и нажмите Enter"
+								{...form.getInputProps('keywords')}
 							/>
-							<ActionIcon
-								type="submit"
-								color="green"
-								loading={updateMutation.isPending}
-								aria-label="Сохранить"
-							>
-								<TbCheck />
-							</ActionIcon>
-							<ActionIcon onClick={() => setIsEdit(false)} aria-label="Отмена">
-								<TbX />
-							</ActionIcon>
+						</Stack>
+					</form>
+				) : (
+					<Stack gap={2}>
+						<Group justify="space-between" wrap="nowrap">
+							<Group gap={6} wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+								<Tooltip label="Перетащите в другую категорию">
+									<Box className={classes.dragHandle} aria-hidden>
+										<TbGripVertical size={16} />
+									</Box>
+								</Tooltip>
+								<Text fw={level === 0 ? 600 : 400} truncate>
+									{category.name}
+								</Text>
+							</Group>
+							<Group gap={4} wrap="nowrap">
+								<Tooltip label="Редактировать">
+									<ActionIcon
+										variant="subtle"
+										onClick={startEdit}
+										aria-label="Редактировать"
+									>
+										<TbPencil />
+									</ActionIcon>
+								</Tooltip>
+								<Tooltip label="Добавить подкатегорию">
+									<ActionIcon
+										variant="subtle"
+										onClick={() => setShowAddChild((value) => !value)}
+										aria-label="Добавить подкатегорию"
+									>
+										<TbPlus />
+									</ActionIcon>
+								</Tooltip>
+								<Tooltip label="Удалить">
+									<ActionIcon
+										variant="subtle"
+										color="red"
+										onClick={handleDelete}
+										loading={deleteMutation.isPending}
+										aria-label="Удалить"
+									>
+										<TbTrash />
+									</ActionIcon>
+								</Tooltip>
+							</Group>
 						</Group>
-						<TagsInput
-							label="Ключевые слова"
-							placeholder="Введите слово и нажмите Enter"
-							{...form.getInputProps('keywords')}
-						/>
+						<CategoryKeywords keywords={category.keywords ?? []} />
 					</Stack>
-				</form>
-			) : (
-				<Stack gap={2}>
-					<Group justify="space-between" wrap="nowrap">
-						<Text fw={level === 0 ? 600 : 400}>{category.name}</Text>
-						<Group gap={4} wrap="nowrap">
-							<Tooltip label="Редактировать">
-								<ActionIcon
-									variant="subtle"
-									onClick={startEdit}
-									aria-label="Редактировать"
-								>
-									<TbPencil />
-								</ActionIcon>
-							</Tooltip>
-							<Tooltip label="Добавить подкатегорию">
-								<ActionIcon
-									variant="subtle"
-									onClick={() => setShowAddChild((value) => !value)}
-									aria-label="Добавить подкатегорию"
-								>
-									<TbPlus />
-								</ActionIcon>
-							</Tooltip>
-							<Tooltip label="Удалить">
-								<ActionIcon
-									variant="subtle"
-									color="red"
-									onClick={handleDelete}
-									loading={deleteMutation.isPending}
-									aria-label="Удалить"
-								>
-									<TbTrash />
-								</ActionIcon>
-							</Tooltip>
-						</Group>
-					</Group>
-					<CategoryKeywords keywords={category.keywords ?? []} />
-				</Stack>
-			)}
+				)}
+			</Box>
 			{showAddChild && (
 				<AddChildForm
 					parentId={category.id}
@@ -247,10 +366,131 @@ function CategoryRow({
 	);
 }
 
-export function CategoryTreeWidget() {
+function RootDropZone() {
+	const {
+		draggedId,
+		setDraggedId,
+		dropTargetId,
+		setDropTargetId,
+		parentById,
+		moveCategory,
+	} = useCategoryDragContext();
+
+	if (draggedId === null) {
+		return null;
+	}
+
+	const currentParent = parentById.get(draggedId) ?? null;
+	const canAcceptDrop =
+		currentParent !== null &&
+		canMoveCategoryToParent(draggedId, null, parentById);
+	const isActive = dropTargetId === 'root' && canAcceptDrop;
+
+	function handleDragOver(event: DragEvent<HTMLDivElement>) {
+		if (!canAcceptDrop) {
+			return;
+		}
+		event.preventDefault();
+		event.dataTransfer.dropEffect = 'move';
+		setDropTargetId('root');
+	}
+
+	function handleDragLeave() {
+		if (dropTargetId === 'root') {
+			setDropTargetId(null);
+		}
+	}
+
+	async function handleDrop(event: DragEvent<HTMLDivElement>) {
+		event.preventDefault();
+		setDropTargetId(null);
+		if (draggedId === null || !canAcceptDrop) {
+			return;
+		}
+		await moveCategory(draggedId, null);
+		setDraggedId(null);
+	}
+
 	return (
-		<Stack gap="md">
-			<CategoryTreeNode parentId="null" />
-		</Stack>
+		<Box
+			className={`${classes.rootDropZone} ${isActive ? classes.rootDropZoneActive : ''}`}
+			onDragOver={handleDragOver}
+			onDragLeave={handleDragLeave}
+			onDrop={handleDrop}
+		>
+			Переместить в корень
+		</Box>
+	);
+}
+
+export function CategoryTreeWidget() {
+	const [draggedId, setDraggedId] = useState<number | null>(null);
+	const [dropTargetId, setDropTargetId] = useState<number | 'root' | null>(
+		null,
+	);
+	const { data: allCategoriesData } = useItemCategoriesQuery(
+		ITEM_CATEGORIES_ALL_PARAMS,
+	);
+	const updateMutation = useItemCategoryUpdate();
+
+	const parentById = useMemo(
+		() => buildCategoryParentMap(allCategoriesData?.items ?? []),
+		[allCategoriesData?.items],
+	);
+
+	const moveCategory = useCallback(
+		async (categoryId: number, newParentId: number | null) => {
+			const currentParent = parentById.get(categoryId) ?? null;
+			if (currentParent === newParentId) {
+				return;
+			}
+
+			if (!canMoveCategoryToParent(categoryId, newParentId, parentById)) {
+				notification.error(
+					'Ошибка',
+					'Нельзя переместить категорию в саму себя или в подкатегорию',
+				);
+				return;
+			}
+
+			try {
+				await updateMutation.mutateAsync({
+					id: categoryId,
+					parentId: newParentId,
+				});
+				notification.success('Категория перемещена');
+			} catch (error) {
+				notification.error('Ошибка', getErrorMessage(error));
+			}
+		},
+		[parentById, updateMutation],
+	);
+
+	const contextValue = useMemo<CategoryDragContextValue>(
+		() => ({
+			draggedId,
+			setDraggedId,
+			dropTargetId,
+			setDropTargetId,
+			parentById,
+			moveCategory,
+			isMoving: updateMutation.isPending,
+		}),
+		[
+			draggedId,
+			dropTargetId,
+			parentById,
+			moveCategory,
+			updateMutation.isPending,
+		],
+	);
+
+	return (
+		<CategoryDragContext.Provider value={contextValue}>
+			<Stack gap="md">
+				<RootDropZone />
+				<CategoryTreeNode parentId="null" />
+			</Stack>
+		</CategoryDragContext.Provider>
 	);
 }

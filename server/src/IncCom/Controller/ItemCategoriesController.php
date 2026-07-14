@@ -275,6 +275,18 @@ class ItemCategoriesController extends AbstractController
 
                 }
 
+                if ($this->tagRepository->isDescendantOf($tag, $parent)) {
+
+                    return $this->json([
+
+                        'error' => 'Validation failed',
+
+                        'violations' => ['parentId' => 'Category cannot be moved into its descendant'],
+
+                    ], Response::HTTP_BAD_REQUEST);
+
+                }
+
                 $tag->setParent($parent);
 
             }

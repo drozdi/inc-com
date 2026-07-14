@@ -1,14 +1,19 @@
 import axios, {
 	type AxiosError,
 	type AxiosInstance,
+	type AxiosRequestConfig,
 	type AxiosResponse,
-	type InternalAxiosRequestConfig,
-} from 'axios';
+} from "axios";
+
+import { } from 'react-router-dom';
 
 interface IAxiosInterceptorDefault {
 	message401?:
 		| string
-		| ((error: AxiosError, axiosInstance: AxiosInstance) => Promise<boolean>);
+		| ((
+				error: AxiosError<{ detail: string }>,
+				axiosInstance: AxiosInstance,
+		  ) => Promise<boolean>);
 	accessToken?: string;
 	refreshToken?: string;
 	accessTokenKey?: string;
@@ -18,14 +23,12 @@ interface IAxiosInterceptorDefault {
 		| ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>);
 }
 
-interface IAxiosInterceptorConfig extends IAxiosInterceptorDefault {
-	baseURL?: string;
-	timeout?: number;
-	headers?: Record<string, string>;
+interface IAxiosInterceptorConfig
+	extends IAxiosInterceptorDefault, AxiosRequestConfig {
 	handleRequest?: (
-		config: InternalAxiosRequestConfig,
-	) => InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>;
-	handleResponse?: (error: AxiosError) => unknown;
+		config: AxiosRequestConfig,
+	) => AxiosRequestConfig | Promise<AxiosRequestConfig>;
+	handleResponse?: (error: AxiosError) => any;
 }
 
 interface IAxiosInterceptor extends IAxiosInterceptorDefault {
@@ -34,13 +37,13 @@ interface IAxiosInterceptor extends IAxiosInterceptorDefault {
 	refreshSubscribers: ((accessToken: string) => void)[];
 
 	// Методы HTTP-запросов
-	post: AxiosInstance['post'];
-	get: AxiosInstance['get'];
-	patch: AxiosInstance['patch'];
-	delete: AxiosInstance['delete'];
-	head: AxiosInstance['head'];
-	options: AxiosInstance['options'];
-	put: AxiosInstance['put'];
+	post: AxiosInstance["post"];
+	get: AxiosInstance["get"];
+	patch: AxiosInstance["patch"];
+	delete: AxiosInstance["delete"];
+	head: AxiosInstance["head"];
+	options: AxiosInstance["options"];
+	put: AxiosInstance["put"];
 
 	// Методы для работы с токенами
 	setAccessToken(accessToken: string): void;
@@ -50,6 +53,7 @@ interface IAxiosInterceptor extends IAxiosInterceptorDefault {
 	getRefreshToken(): string | null;
 	clearTokens(): void;
 	refreshTokens(): Promise<any>;
+	_message401(error: AxiosError): Promise<boolean>;
 }
 
 export class AxiosInterceptor implements IAxiosInterceptor {
@@ -58,22 +62,22 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 	public refreshSubscribers: ((accessToken: string) => void)[] = [];
 	public message401?:
 		| string
-		| ((error: AxiosError, axiosInstance: AxiosInstance) => Promise<boolean>);
-	public accessToken = 'access';
-	public refreshToken = 'refresh';
+		| ((error: AxiosError<{ detail: string }>, axiosInstance: AxiosInstance) => Promise<boolean>);
+	public accessToken = "access";
+	public refreshToken = "refresh";
 	public accessTokenKey?: string;
 	public refreshTokenKey?: string;
 	public urlRefreshToken?:
 		| string
 		| ((refreshToken: string, axiosInstance: AxiosInstance) => Promise<any>);
 	// Методы HTTP-запросов
-	public post: AxiosInstance['post'];
-	public get: AxiosInstance['get'];
-	public patch: AxiosInstance['patch'];
-	public delete: AxiosInstance['delete'];
-	public head: AxiosInstance['head'];
-	public options: AxiosInstance['options'];
-	public put: AxiosInstance['put'];
+	public post: AxiosInstance["post"];
+	public get: AxiosInstance["get"];
+	public patch: AxiosInstance["patch"];
+	public delete: AxiosInstance["delete"];
+	public head: AxiosInstance["head"];
+	public options: AxiosInstance["options"];
+	public put: AxiosInstance["put"];
 	constructor({
 		message401,
 		accessToken,
@@ -111,14 +115,14 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 		if (accessTokenKey) {
 			this.accessTokenKey = accessTokenKey;
 			this.axiosInstance.interceptors.request.use(
-				(config: InternalAxiosRequestConfig) => {
+				(config: AxiosRequestConfig) => {
 					const accessToken = this.getAccessToken();
 					if (accessToken) {
-						config.headers.set('Authorization', `Bearer ${accessToken}`);
+						config.headers.Authorization = `Bearer ${accessToken}`;
 					}
 					return config;
 				},
-				(error: AxiosError) => Promise.reject(error),
+				(error: AxiosError<{ detail: string }>) => Promise.reject(error),
 			);
 		}
 
@@ -126,14 +130,14 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 			this.refreshTokenKey = refreshTokenKey;
 			this.axiosInstance.interceptors.response.use(
 				(response: AxiosResponse) => response,
-				async (error: AxiosError) => {
-					const originalRequest = error.config as InternalAxiosRequestConfig & {
+				async (error: AxiosError<{ detail: string }>) => {
+					const originalRequest = error.config as AxiosRequestConfig & {
 						_retry?: boolean;
 					};
 					if (
 						error.response &&
 						error.response.status === 401 &&
-						(await this._messag401(error)) &&
+						(await this._message401(error)) &&
 						!originalRequest._retry
 					) {
 						if (!this.isRefreshing) {
@@ -151,8 +155,10 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 
 								return this.axiosInstance(originalRequest);
 							} catch (refreshError) {
+								console.error(refreshError);
 								this.clearTokens();
 								this.refreshSubscribers = [];
+								window.location.href = '/'
 								return Promise.reject(refreshError);
 							} finally {
 								this.isRefreshing = false;
@@ -161,10 +167,7 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 
 						return new Promise((resolve) => {
 							this.refreshSubscribers.push((newAccessToken: string) => {
-								originalRequest.headers.set(
-									'Authorization',
-									`Bearer ${newAccessToken}`,
-								);
+								originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 								originalRequest._retry = true;
 								resolve(this.axiosInstance(originalRequest));
 							});
@@ -179,7 +182,7 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 		if (handleRequest) {
 			this.axiosInstance.interceptors.request.use(
 				handleRequest,
-				(error: AxiosError) => Promise.reject(error),
+				(error: AxiosError<{ detail: string }>) => Promise.reject(error),
 			);
 		}
 
@@ -191,19 +194,14 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 		this.options = this.axiosInstance.options.bind(this.axiosInstance);
 		this.put = this.axiosInstance.put.bind(this.axiosInstance);
 	}
-	async _messag401(error: AxiosError): Promise<boolean> {
+	async _message401(error: AxiosError<{ detail: string, message?: string }>): Promise<boolean> {
 		if (!this.message401) {
 			return true;
 		}
-		if (typeof this.message401 === 'function') {
+		if (typeof this.message401 === "function") {
 			return await this.message401(error, this.axiosInstance);
 		}
-		return (
-			typeof error.response?.data === 'object' &&
-			error.response.data !== null &&
-			'message' in error.response.data &&
-			error.response.data.message === this.message401
-		);
+		return error.response?.data?.message === this.message401;
 	}
 	setAccessToken(accessToken: string): void {
 		if (this.accessTokenKey) {
@@ -242,17 +240,17 @@ export class AxiosInterceptor implements IAxiosInterceptor {
 	async refreshTokens(): Promise<any> {
 		const refreshToken = this.getRefreshToken();
 		if (!refreshToken) {
-			throw new Error('No refresh token available');
+			throw new Error("No refresh token available");
 		}
-		if (typeof this.urlRefreshToken === 'function') {
+		if (typeof this.urlRefreshToken === "function") {
 			return await this.urlRefreshToken(refreshToken, this.axiosInstance);
-		} else if (typeof this.urlRefreshToken === 'string') {
+		} else if (typeof this.urlRefreshToken === "string") {
 			return (
 				await this.axiosInstance.post(this.urlRefreshToken, {
 					refreshToken,
 				})
 			).data;
 		}
-		throw new Error('No valid URL or function provided for token refresh');
+		throw new Error("No valid URL or function provided for token refresh");
 	}
 }

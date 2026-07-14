@@ -14,7 +14,7 @@ export const storageLocal: IStorage = {
 		localStorage.removeItem(key)
 	},
 	get(key, def) {
-		let result = localStorage.getItem(key)
+		const result = localStorage.getItem(key)
 		try {
 			if (result) {
 				return JSON.parse(result)

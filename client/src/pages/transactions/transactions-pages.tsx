@@ -11,6 +11,7 @@ import {
 	parseAccountIdParam,
 	parseTransactionType,
 	transactionNewUrl,
+	transferNewUrl,
 } from '@/shared/lib/transaction-url';
 
 export function TransactionsListPage() {
@@ -83,7 +84,7 @@ export function TransactionsListPage() {
 						</Button>
 						<Button
 							component={Link}
-							to={`/accounts/${accountId}/transfers/new`}
+							to={transferNewUrl(accountId)}
 							variant="light"
 						>
 							Перевод
@@ -136,7 +137,7 @@ export function TransactionsListPage() {
 						</Button>
 						<Button
 							component={Link}
-							to={`/accounts/${accountId}/transfers/new`}
+							to={transferNewUrl(accountId)}
 							variant="light"
 						>
 							Перевод
@@ -203,19 +204,31 @@ export function TransactionEditPage() {
 }
 
 export function TransferCreatePage() {
-	const { id } = useParams();
+	const { id: routeAccountId } = useParams();
+	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
-	const accountId = Number(id);
+	const defaultFromAccountId =
+		parseAccountIdParam(searchParams.get('fromAccountId')) ??
+		parseAccountIdParam(routeAccountId ?? null);
 
 	return (
 		<>
 			<Template.Title>Новый перевод</Template.Title>
 			<TransferForm
-				defaultFromAccountId={accountId}
-				onSuccess={() => navigate(`/accounts/${accountId}/transactions`)}
+				defaultFromAccountId={defaultFromAccountId}
+				onSuccess={(transfer) =>
+					navigate(`/accounts/${transfer.fromAccountId}/transactions`)
+				}
 			/>
 		</>
 	);
+}
+
+export function LegacyTransferCreateRedirect() {
+	const { id } = useParams();
+	const accountId = parseAccountIdParam(id ?? null);
+
+	return <Navigate to={transferNewUrl(accountId)} replace />;
 }
 
 export function TransferEditPage() {

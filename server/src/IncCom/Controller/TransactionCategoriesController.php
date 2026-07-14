@@ -52,7 +52,10 @@ class TransactionCategoriesController extends AbstractController
             $filters['createdBy'] = (int) $request->query->get('createdBy');
         }
 
-        $sort = [['key' => 'label', 'order' => 'ASC']];
+        $sort = [
+            ['key' => 'sort', 'order' => 'ASC'],
+            ['key' => 'label', 'order' => 'ASC'],
+        ];
 
         $paginated = $this->paginationService->paginate(
             $this->categoryRepository,
@@ -239,6 +242,7 @@ class TransactionCategoriesController extends AbstractController
             'id' => $category->getId(),
             'name' => $category->getLabel(),
             'type' => $category->getType(),
+            'order' => $category->getSort(),
             'accountId' => $category->getAccount()?->getId(),
             'createdById' => $category->getCreatedBy()?->getId(),
             'createdAt' => $this->formatDateTime($category->getCreatedAt()),

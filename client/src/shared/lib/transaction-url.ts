@@ -11,6 +11,16 @@ export function transactionNewUrl(
 	return `/transactions/new?${params.toString()}`;
 }
 
+export function transferNewUrl(fromAccountId?: number): string {
+	if (fromAccountId && fromAccountId > 0) {
+		const params = new URLSearchParams({
+			fromAccountId: String(fromAccountId),
+		});
+		return `/transfers/new?${params.toString()}`;
+	}
+	return '/transfers/new';
+}
+
 export function parseTransactionType(value: string | null): TransactionType {
 	return value === 'income' ? 'income' : 'expense';
 }

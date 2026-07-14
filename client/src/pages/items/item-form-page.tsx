@@ -1,22 +1,17 @@
 import { useItemCreate, useItemQuery, useItemUpdate } from '@/entities/item';
-import {
-	ITEM_CATEGORIES_ALL_PARAMS,
-	useItemCategoriesQuery,
-} from '@/entities/item-category';
 import { defaultItem } from '@/entities/item/model/defaults';
-import type { IItemCategory } from '@/entities/item-category/model/types';
+import { ItemCategoryMultiSelect } from '@/features/item-filter';
 import { Template } from '@/layouts';
 import {
 	Button,
 	Group,
 	Loader,
-	MultiSelect,
 	Stack,
 	TextInput,
 	Textarea,
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function ItemFormPage() {
@@ -27,20 +22,8 @@ export function ItemFormPage() {
 	const navigate = useNavigate();
 
 	const { data: item, isLoading } = useItemQuery(itemId);
-	const { data: categoriesData } = useItemCategoriesQuery(
-		ITEM_CATEGORIES_ALL_PARAMS,
-	);
 	const createMutation = useItemCreate();
 	const updateMutation = useItemUpdate();
-
-	const categoryOptions = useMemo(
-		() =>
-			(categoriesData?.items ?? []).map((category: IItemCategory) => ({
-				value: String(category.id),
-				label: category.name,
-			})),
-		[categoriesData?.items],
-	);
 
 	const form = useForm({
 		initialValues: {
@@ -99,10 +82,11 @@ export function ItemFormPage() {
 					{...form.getInputProps('description')}
 				/>
 				<TextInput label="Ед. изм." {...form.getInputProps('unit')} />
-				<MultiSelect
-					label="Категории"
-					data={categoryOptions}
-					{...form.getInputProps('categoryIds')}
+				<ItemCategoryMultiSelect
+					itemName={form.values.name}
+					value={form.values.categoryIds}
+					onChange={(categoryIds) => form.setFieldValue('categoryIds', categoryIds)}
+					error={form.errors.categoryIds as string | undefined}
 				/>
 				<Group>
 					<Button

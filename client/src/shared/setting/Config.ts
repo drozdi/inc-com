@@ -44,7 +44,7 @@ export class Config {
 		return this.key(name) in this.conf
 	}
 
-	get(name: string, def?: any): any {
+	getRaw(name: string, def?: any): any {
 		const key = this.key(name)
 		if (!(key in this.conf)) {
 			return def
@@ -60,7 +60,11 @@ export class Config {
 			val = this.conf[this.key(refKey)] ?? def
 		}
 
-		return this.resolveValue(val)
+		return val
+	}
+
+	get(name: string, def?: any): any {
+		return this.resolveValue(this.getRaw(name, def))
 	}
 
 	remove(name: string): void {

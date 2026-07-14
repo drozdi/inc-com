@@ -36,6 +36,7 @@ import {
 	TransactionsListPage,
 
 	TransferCreatePage,
+	LegacyTransferCreateRedirect,
 	TransferEditPage,
 
 } from '@/pages/transactions';
@@ -154,7 +155,7 @@ export function AppRouters() {
 
 						},
 
-						{ path: ':id/transfers/new', element: <TransferCreatePage /> },
+						{ path: ':id/transfers/new', element: <LegacyTransferCreateRedirect /> },
 
 						{ path: ':id/categories', element: <CategoriesPage /> },
 
@@ -185,6 +186,8 @@ export function AppRouters() {
 					element: <Outlet />,
 
 					children: [
+
+						{ path: 'new', element: <TransferCreatePage /> },
 
 						{ path: ':id/edit', element: <TransferEditPage /> },
 

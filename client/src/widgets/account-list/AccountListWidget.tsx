@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import { TbDots, TbPlus } from 'react-icons/tb';
 import { formatBalance } from '@/shared/utils/number-format';
-import { transactionNewUrl } from '@/shared/lib/transaction-url';
+import { transactionNewUrl, transferNewUrl } from '@/shared/lib/transaction-url';
 import { Link, NavLink } from 'react-router-dom';
 
 function formatAccountTitle(
@@ -96,7 +96,7 @@ export function AccountListWidget() {
 										</Menu.Item>
 										<Menu.Item
 											component={Link}
-											to={`/accounts/${account.id}/transfers/new`}
+											to={transferNewUrl(account.id)}
 										>
 											Перевод
 										</Menu.Item>

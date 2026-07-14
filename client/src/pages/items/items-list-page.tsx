@@ -2,6 +2,7 @@ import {
 	useItemDelete,
 	useItemsQuery,
 } from '@/entities/item';
+import { ItemCategoryFilterSelect } from '@/features/item-filter';
 import { Template } from '@/layouts';
 import {
 	ActionIcon,
@@ -9,14 +10,25 @@ import {
 	Button,
 	Group,
 	Loader,
+	Stack,
 	Table,
 	Text,
 } from '@mantine/core';
+import { useMemo, useState } from 'react';
 import { TbPencil, TbTrash } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
 
 export function ItemsListPage() {
-	const { data, isLoading } = useItemsQuery();
+	const [categoryId, setCategoryId] = useState<number | null>(null);
+	const queryParams = useMemo(
+		() => ({
+			limit: 100,
+			offset: 0,
+			...(categoryId !== null ? { category: categoryId } : {}),
+		}),
+		[categoryId],
+	);
+	const { data, isLoading } = useItemsQuery(queryParams);
 	const deleteMutation = useItemDelete();
 	const items = data?.items ?? [];
 
@@ -27,11 +39,16 @@ export function ItemsListPage() {
 	return (
 		<>
 			<Template.Title>Товары</Template.Title>
-			<Group justify="flex-end" mb="md">
-				<Button component={Link} to="/items/new">
-					Создать товар
-				</Button>
-			</Group>
+			<Stack gap="md">
+				<Group justify="space-between" align="flex-end">
+					<ItemCategoryFilterSelect
+						value={categoryId}
+						onChange={setCategoryId}
+					/>
+					<Button component={Link} to="/items/new">
+						Создать товар
+					</Button>
+				</Group>
 			{isLoading ? (
 				<Loader />
 			) : items.length ? (
@@ -78,8 +95,11 @@ export function ItemsListPage() {
 					</Table.Tbody>
 				</Table>
 			) : (
-				<Text c="dimmed">Товаров нет</Text>
+				<Text c="dimmed">
+					{categoryId !== null ? 'Товаров в категории нет' : 'Товаров нет'}
+				</Text>
 			)}
+			</Stack>
 		</>
 	);
 }

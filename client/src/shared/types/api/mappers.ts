@@ -42,7 +42,7 @@ export function mapTransactionCategoryFromApi(
 		owner: '',
 		owner_id: data.createdById ?? 0,
 		account_id: data.accountId ?? 0,
-		sort: 100,
+		sort: data.order ?? 100,
 		label: data.name,
 		type: data.type ?? '',
 		mcc: 0,

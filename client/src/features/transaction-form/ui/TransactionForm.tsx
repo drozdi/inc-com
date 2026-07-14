@@ -124,6 +124,7 @@ export function TransactionForm({
 		() =>
 			(categoriesData?.items ?? [])
 				.filter((category) => category.type === type)
+				.sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label))
 				.map((category) => ({
 					value: String(category.id),
 					label: category.label,

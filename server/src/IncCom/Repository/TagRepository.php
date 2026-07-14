@@ -69,6 +69,19 @@ class TagRepository extends AbstractRepository
             ->getSingleScalarResult();
     }
 
+    public function isDescendantOf(Tag $ancestor, Tag $node): bool
+    {
+        $current = $node->getParent();
+        while ($current !== null) {
+            if ($current->getId() === $ancestor->getId()) {
+                return true;
+            }
+            $current = $current->getParent();
+        }
+
+        return false;
+    }
+
     public function save(Tag $entity, bool $flush = false): void
     {
         if (!(bool)$entity->getId()) {
