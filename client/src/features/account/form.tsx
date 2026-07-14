@@ -1,20 +1,23 @@
 import {
 	defaultAccount,
+	useAccountCreate,
+	useAccountQuery,
+	useAccountUpdate,
 	useEnumsCurrency,
 	useEnumsTypeAccount,
-	useStoreAccounts,
 } from '@/entities/account';
+import { Template } from '@/layouts';
 import {
 	Button,
 	ColorInput,
 	Group,
+	Loader,
 	NumberInput,
 	Select,
 	Stack,
 	TextInput,
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
-import { Template } from '@/layouts';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,41 +26,71 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ id }: AccountFormProps) {
-	const sa = useStoreAccounts();
+	const isEdit = Boolean(id);
 	const navigate = useNavigate();
+	const { data: account, isLoading: isLoadingAccount } = useAccountQuery(id);
+	const createMutation = useAccountCreate();
+	const updateMutation = useAccountUpdate();
+	const { dataSelect: types } = useEnumsTypeAccount();
+	const { dataSelect: currencies } = useEnumsCurrency();
+
+	const isSaving = createMutation.isPending || updateMutation.isPending;
+
 	const form = useForm<IAccount>({
-		mode: 'uncontrolled',
 		initialValues: { ...defaultAccount },
 		validate: {
 			label: isNotEmpty('Заполните название'),
 			type: isNotEmpty('Выберите тип счета'),
 			currency: isNotEmpty('Выберите валюту'),
 		},
-		enhanceGetInputProps: ({ field, form }) => {
-			if (field === 'balance' && form.values.id) {
-				return { readOnly: true };
-			}
-			return {};
-		},
 	});
-	const { dataSelect: types } = useEnumsTypeAccount();
-	const { dataSelect: currencies } = useEnumsCurrency();
 
-	async function handleSave({ id, ...data }: IAccount) {
-		if (id) {
-			await sa.update(id, data);
-		} else {
-			await sa.add(data);
-		}
-	}
 	useEffect(() => {
-		if (!id) {
+		if (account && isEdit) {
+			form.setValues(account);
+		}
+	}, [account, isEdit]);
+
+	async function handleSave(values: IAccount) {
+		const { id: accountId, ...data } = values;
+		if (isEdit && id) {
+			await updateMutation.mutateAsync({ id, ...data });
+			return { id, ...data } as IAccount;
+		}
+		return createMutation.mutateAsync(data);
+	}
+
+	async function saveAndNavigate() {
+		const validation = form.validate();
+		if (validation.hasErrors) {
 			return;
 		}
-		sa.detail(id).then((data) => {
-			form.initialize(data as IAccount);
-		});
-	}, [id]);
+		try {
+			await handleSave(form.getValues());
+			navigate('/accounts');
+		} catch {
+			// ошибки показываются через mutation / notification в api layer
+		}
+	}
+
+	async function saveOnly() {
+		const validation = form.validate();
+		if (validation.hasErrors) {
+			return;
+		}
+		try {
+			const saved = await handleSave(form.getValues());
+			if (saved?.id) {
+				form.setFieldValue('id', saved.id);
+			}
+		} catch {
+			// handled upstream
+		}
+	}
+
+	if (isEdit && isLoadingAccount) {
+		return <Loader />;
+	}
 
 	return (
 		<Stack>
@@ -69,16 +102,19 @@ export function AccountForm({ id }: AccountFormProps) {
 			/>
 			<Select
 				label="Тип"
-				key={form.key('type')}
+				placeholder="Выберите тип"
+				allowDeselect={false}
 				required
 				data={types}
 				{...form.getInputProps('type')}
 			/>
 			<Select
 				label="Валюта"
-				key={form.key('currency')}
+				placeholder="Выберите валюту"
+				allowDeselect={false}
 				required
 				searchable
+				readOnly={isEdit}
 				data={currencies}
 				{...form.getInputProps('currency')}
 			/>
@@ -87,6 +123,7 @@ export function AccountForm({ id }: AccountFormProps) {
 				placeholder="Баланс"
 				step={0.01}
 				required
+				readOnly={isEdit}
 				{...form.getInputProps('balance')}
 			/>
 			<ColorInput
@@ -108,26 +145,20 @@ export function AccountForm({ id }: AccountFormProps) {
 					'#fab005',
 					'#fd7e14',
 				]}
-				key={form.key('color')}
 				{...form.getInputProps('color')}
 			/>
 			<Template.Footer>
 				<Group>
 					<Button
-						loading={sa.isLoading}
-						onClick={() => {
-							form.onSubmit(handleSave)();
-							navigate(-1);
-						}}
+						loading={isSaving}
+						onClick={saveAndNavigate}
 						color="green"
 					>
 						Сохранить
 					</Button>
 					<Button
-						loading={sa.isLoading}
-						onClick={() => {
-							form.onSubmit(handleSave)();
-						}}
+						loading={isSaving}
+						onClick={saveOnly}
 						color="blue"
 					>
 						Применить
