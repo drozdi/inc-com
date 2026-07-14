@@ -1,8 +1,10 @@
-import { useStoreCategories } from '@/entities/transaction-category';
+import { useTransactionCategoryCreate } from '@/entities/transaction-category';
 import { notification } from '@/shared/notification';
+import { getErrorMessage } from '@/shared/utils/error';
 import { ActionIcon, TextInput, type TextInputProps } from '@mantine/core';
 import { useState } from 'react';
 import { TbPlus } from 'react-icons/tb';
+
 export function CategotyAdd({
 	account_id,
 	type,
@@ -11,37 +13,40 @@ export function CategotyAdd({
 	account_id: ICategory['account_id'];
 	type: string;
 }) {
-	const storeCategories = useStoreCategories();
+	const createMutation = useTransactionCategoryCreate();
 	const [newLabel, setNewLabel] = useState('');
 
-	const handlerSave = async () => {
+	async function handlerSave() {
 		const label = newLabel.trim();
 		if (!label) {
 			notification.error('Ошибка', 'Введите название!');
 			return;
 		}
-		storeCategories
-			.add({
+		try {
+			await createMutation.mutateAsync({
 				account_id,
 				type,
 				label,
-			})
-			.then(() => {
-				setNewLabel('');
 			});
-	};
-	const handlerKeyPress = ({ key }: React.KeyboardEvent) => {
-		if (key === 'Enter') {
-			handlerSave();
+			setNewLabel('');
+		} catch (error) {
+			notification.error('Ошибка', getErrorMessage(error));
 		}
-	};
+	}
+
+	function handlerKeyPress({ key }: React.KeyboardEvent) {
+		if (key === 'Enter') {
+			void handlerSave();
+		}
+	}
+
 	return (
 		<TextInput
 			{...props}
 			value={newLabel}
 			onChange={({ target }) => setNewLabel(target.value)}
 			rightSection={
-				<ActionIcon onClick={handlerSave}>
+				<ActionIcon onClick={() => void handlerSave()} loading={createMutation.isPending}>
 					<TbPlus />
 				</ActionIcon>
 			}

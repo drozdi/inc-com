@@ -7,6 +7,7 @@ import {
 	type ITransferPayload,
 } from '@/entities/transfer';
 import { notification } from '@/shared/notification';
+import { balanceInputProps, formatBalance } from '@/shared/utils/number-format';
 import { getErrorMessage } from '@/shared/utils/error';
 import {
 	Button,
@@ -28,8 +29,15 @@ interface TransferFormValues {
 	comment: string;
 }
 
+interface AccountSelectOption {
+	value: string;
+	label: string;
+	currency: string;
+}
+
 interface TransferFormProps {
 	id?: ITransfer['id'];
+	defaultFromAccountId?: number;
 	onSuccess?: (transfer: ITransfer) => void;
 }
 
@@ -45,11 +53,16 @@ function toFormDate(value?: string | null): Date | null {
 	return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
-export function TransferForm({ id, onSuccess }: TransferFormProps) {
+export function TransferForm({
+	id,
+	defaultFromAccountId,
+	onSuccess,
+}: TransferFormProps) {
 	const form = useForm<TransferFormValues>({
-		mode: 'uncontrolled',
 		initialValues: {
-			fromAccountId: null,
+			fromAccountId: defaultFromAccountId
+				? String(defaultFromAccountId)
+				: null,
 			toAccountId: null,
 			amount: 0,
 			date: new Date(),
@@ -63,37 +76,99 @@ export function TransferForm({ id, onSuccess }: TransferFormProps) {
 		},
 	});
 
-	const { data: accountsData } = useAccountsQuery();
+	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
 	const { data: transferData } = useTransferQuery(id);
 	const createMutation = useTransferCreate();
 	const updateMutation = useTransferUpdate();
 
-	const accountOptions = useMemo(
+	const accounts = accountsData?.items ?? [];
+	const fromAccountId = form.values.fromAccountId;
+	const toAccountId = form.values.toAccountId;
+
+	const accountOptions = useMemo<AccountSelectOption[]>(
 		() =>
-			(accountsData?.items ?? []).map((account) => ({
+			accounts.map((account) => ({
 				value: String(account.id),
-				label: account.label,
+				label: `${account.label} (${formatBalance(account.balance)} ${account.currency})`,
+				currency: account.currency,
 			})),
-		[accountsData?.items],
+		[accounts],
 	);
 
+	const fromCurrency = accounts.find(
+		(account) => String(account.id) === fromAccountId,
+	)?.currency;
+
+	const fromAccountOptions = useMemo(
+		() => accountOptions.filter((option) => option.value !== toAccountId),
+		[accountOptions, toAccountId],
+	);
+
+	const toAccountOptions = useMemo(() => {
+		return accountOptions.filter((option) => {
+			if (option.value === fromAccountId) {
+				return false;
+			}
+			if (!fromCurrency) {
+				return true;
+			}
+			return option.currency === fromCurrency;
+		});
+	}, [accountOptions, fromAccountId, fromCurrency]);
+
 	useEffect(() => {
-		if (!transferData?.id || !id) {
+		if (id && transferData?.id) {
+			form.setValues({
+				fromAccountId: String(transferData.fromAccountId),
+				toAccountId: String(transferData.toAccountId),
+				amount: Number(transferData.amount),
+				date: toFormDate(transferData.date),
+				comment: transferData.comment ?? '',
+			});
 			return;
 		}
 
-		form.setValues({
-			fromAccountId: String(transferData.fromAccountId),
-			toAccountId: String(transferData.toAccountId),
-			amount: Number(transferData.amount),
-			date: toFormDate(transferData.date),
-			comment: transferData.comment ?? '',
-		});
-	}, [transferData, id]);
+		if (!id && defaultFromAccountId) {
+			form.setFieldValue('fromAccountId', String(defaultFromAccountId));
+		}
+	}, [transferData, id, defaultFromAccountId]);
+
+	useEffect(() => {
+		if (!fromAccountId || !toAccountId) {
+			return;
+		}
+
+		const toAccount = accounts.find(
+			(account) => String(account.id) === toAccountId,
+		);
+
+		if (toAccount && fromCurrency && toAccount.currency !== fromCurrency) {
+			form.setFieldValue('toAccountId', null);
+		}
+	}, [fromAccountId, fromCurrency, toAccountId, accounts]);
 
 	async function handleSubmit(values: TransferFormValues) {
 		if (values.fromAccountId === values.toAccountId) {
 			notification.error('Ошибка', 'Счета должны отличаться');
+			return;
+		}
+
+		const fromAccount = accounts.find(
+			(account) => String(account.id) === values.fromAccountId,
+		);
+		const toAccount = accounts.find(
+			(account) => String(account.id) === values.toAccountId,
+		);
+
+		if (
+			fromAccount &&
+			toAccount &&
+			fromAccount.currency !== toAccount.currency
+		) {
+			notification.error(
+				'Ошибка',
+				'Перевод возможен только между счетами с одной валютой',
+			);
 			return;
 		}
 
@@ -119,47 +194,69 @@ export function TransferForm({ id, onSuccess }: TransferFormProps) {
 	}
 
 	const loading = createMutation.isPending || updateMutation.isPending;
+	const fromAccountProps = form.getInputProps('fromAccountId');
+	const toAccountProps = form.getInputProps('toAccountId');
 
 	return (
 		<form onSubmit={form.onSubmit(handleSubmit)}>
 			<Stack>
 			<Select
 				label="Счёт списания"
-				data={accountOptions}
-				key={form.key('fromAccountId')}
-				{...form.getInputProps('fromAccountId')}
+				data={fromAccountOptions}
+				{...fromAccountProps}
+				onChange={(value) => {
+					fromAccountProps.onChange(value);
+					form.setFieldValue('toAccountId', null);
+				}}
 				searchable
 				required
+				placeholder={
+					isAccountsLoading && !fromAccountOptions.length
+						? 'Загрузка…'
+						: 'Выберите счёт'
+				}
+				nothingFoundMessage="Счета не найдены"
 				w="100%"
 			/>
 			<Select
 				label="Счёт зачисления"
-				data={accountOptions}
-				key={form.key('toAccountId')}
-				{...form.getInputProps('toAccountId')}
+				data={toAccountOptions}
+				{...toAccountProps}
 				searchable
 				required
+				disabled={!fromAccountId}
+				placeholder={
+					!fromAccountId
+						? 'Сначала выберите счёт списания'
+						: isAccountsLoading && !toAccountOptions.length
+							? 'Загрузка…'
+							: fromCurrency
+								? `Счета в ${fromCurrency}`
+								: 'Выберите счёт'
+				}
+				nothingFoundMessage={
+					fromCurrency
+						? `Нет других счетов в валюте ${fromCurrency}`
+						: 'Счета не найдены'
+				}
 				w="100%"
 			/>
 			<NumberInput
 				label="Сумма"
-				decimalScale={2}
 				min={0}
-				key={form.key('amount')}
 				{...form.getInputProps('amount')}
+				{...balanceInputProps}
 				required
 				w="100%"
 			/>
 			<DateTimePicker
 				label="Дата"
-				key={form.key('date')}
 				{...form.getInputProps('date')}
 				required
 				w="100%"
 			/>
 			<TextInput
 				label="Комментарий"
-				key={form.key('comment')}
 				{...form.getInputProps('comment')}
 				w="100%"
 			/>

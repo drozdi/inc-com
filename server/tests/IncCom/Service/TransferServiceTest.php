@@ -123,9 +123,46 @@ final class TransferServiceTest extends TestCase
         ], $this->createUser(1));
     }
 
-    private function createAccount(int $id): Account
+    public function testCreateRejectsDifferentCurrencies(): void
+    {
+        $fromAccount = $this->createAccount(1, 'RUB');
+        $toAccount = $this->createAccount(2, 'USD');
+
+        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository->method('find')->willReturnMap([
+            [1, $fromAccount],
+            [2, $toAccount],
+        ]);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('wrapInTransaction')
+            ->willReturnCallback(static fn (callable $callback) => $callback());
+
+        $service = new TransferService(
+            $em,
+            $this->createMock(BalanceService::class),
+            $accountRepository,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Transfer is only allowed between accounts with the same currency.');
+
+        $service->create([
+            'fromAccountId' => 1,
+            'toAccountId' => 2,
+            'amount' => '50.00',
+            'date' => '2026-02-01',
+        ], $this->createUser(1));
+    }
+
+    private function createAccount(int $id, string $currency = 'RUB'): Account
     {
         $account = new Account();
+        $account->setLabel('Account '.$id);
+        $account->setType('cash');
+        $account->setIcon('wallet');
+        $account->setColor('#000000');
+        $account->setCurrency($currency);
         $this->setEntityId($account, $id);
 
         return $account;

@@ -218,7 +218,18 @@ class ItemsController extends AbstractController
 
     }
 
+    #[Route('/{id}', name: 'read', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function read(int $id, #[CurrentUser] ?User $user): JsonResponse
+    {
+        if ($user === null) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
 
+        $product = $this->findProductOr404($id);
+        $this->denyAccessUnlessGranted(ItemVoter::MANAGE, $product);
+
+        return $this->json($this->mapProduct($product));
+    }
 
     #[Route('/{id}', name: 'update', methods: ['PUT', 'PATCH'], requirements: ['id' => '\d+'])]
 

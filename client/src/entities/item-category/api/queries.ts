@@ -16,28 +16,57 @@ import {
 
 const ITEM_CATEGORIES_KEY = 'item-categories';
 
+export const ITEM_CATEGORIES_ALL_PARAMS = { limit: 100, offset: 0 } as const;
+
+export const ITEM_CATEGORIES_ROOT_PARAMS = {
+	parent: 'null' as const,
+	limit: 100,
+	offset: 0,
+};
+
+export const ITEM_CATEGORIES_ALL_QUERY_KEY = [
+	ITEM_CATEGORIES_KEY,
+	ITEM_CATEGORIES_ALL_PARAMS,
+] as const;
+
+export const ITEM_CATEGORIES_ROOT_QUERY_KEY = [
+	ITEM_CATEGORIES_KEY,
+	ITEM_CATEGORIES_ROOT_PARAMS,
+] as const;
+
+function itemCategoriesQueryKey(params: IRequestItemCategoryList) {
+	return [ITEM_CATEGORIES_KEY, params] as const;
+}
+
+function invalidateItemCategoriesQueries(
+	queryClient: ReturnType<typeof useQueryClient>,
+) {
+	return queryClient.invalidateQueries({ queryKey: [ITEM_CATEGORIES_KEY] });
+}
+
 export function useItemCategoriesQuery(
-	params: IRequestItemCategoryList = { limit: 100, offset: 0 },
+	params: IRequestItemCategoryList = ITEM_CATEGORIES_ALL_PARAMS,
 	options?: Omit<
 		UseQueryOptions<IResponseList<IItemCategory>>,
 		'queryKey' | 'queryFn'
 	>,
 ) {
 	return useQuery({
-		queryKey: [ITEM_CATEGORIES_KEY, params],
+		queryKey: itemCategoriesQueryKey(params),
 		queryFn: () => requestItemCategoryList(params),
 		...options,
 	});
 }
 
 export function useItemCategoryQuery(id?: IItemCategory['id']) {
+	const isValidId = id !== undefined && !Number.isNaN(id) && id > 0;
 	return useQuery({
 		queryKey: [ITEM_CATEGORIES_KEY, id],
 		queryFn: () =>
-			id
+			isValidId
 				? requestItemCategoryRead(id)
 				: Promise.resolve(defaultItemCategory),
-		enabled: !!id,
+		enabled: isValidId,
 	});
 }
 
@@ -46,8 +75,8 @@ export function useItemCategoryCreate() {
 	return useMutation({
 		mutationFn: (data: Partial<IItemCategory>) =>
 			requestItemCategoryCreate(data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: [ITEM_CATEGORIES_KEY] });
+		onSuccess: async () => {
+			await invalidateItemCategoriesQueries(queryClient);
 		},
 	});
 }
@@ -60,8 +89,8 @@ export function useItemCategoryUpdate() {
 			...data
 		}: Partial<IItemCategory> & { id: IItemCategory['id'] }) =>
 			requestItemCategoryUpdate(id, data),
-		onSuccess: (_data, variables) => {
-			queryClient.invalidateQueries({ queryKey: [ITEM_CATEGORIES_KEY] });
+		onSuccess: async (_data, variables) => {
+			await invalidateItemCategoriesQueries(queryClient);
 			queryClient.invalidateQueries({
 				queryKey: [ITEM_CATEGORIES_KEY, variables.id],
 			});
@@ -74,9 +103,19 @@ export function useItemCategoryDelete() {
 	return useMutation({
 		mutationFn: (id: IItemCategory['id']) =>
 			requestItemCategoryDelete(id),
-		onSuccess: (_data, id) => {
-			queryClient.invalidateQueries({ queryKey: [ITEM_CATEGORIES_KEY] });
+		onSuccess: async (_data, id) => {
+			await invalidateItemCategoriesQueries(queryClient);
 			queryClient.removeQueries({ queryKey: [ITEM_CATEGORIES_KEY, id] });
 		},
 	});
+}
+
+export function buildItemCategoriesChildParams(
+	parentId: number,
+): IRequestItemCategoryList {
+	return {
+		parent: parentId,
+		limit: 100,
+		offset: 0,
+	};
 }

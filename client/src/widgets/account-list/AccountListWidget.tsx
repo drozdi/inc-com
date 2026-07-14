@@ -15,7 +15,20 @@ import {
 	alpha,
 } from '@mantine/core';
 import { TbDots, TbPlus } from 'react-icons/tb';
+import { formatBalance } from '@/shared/utils/number-format';
+import { transactionNewUrl } from '@/shared/lib/transaction-url';
 import { Link, NavLink } from 'react-router-dom';
+
+function formatAccountTitle(
+	account: IAccount,
+	typeLabel: string,
+): string {
+	const title = `${account.label} (${typeLabel})`;
+	if (account.isMaster === false && account.owner) {
+		return `${title} - ${account.owner}`;
+	}
+	return title;
+}
 
 export function AccountListWidget() {
 	const { data, isLoading } = useAccountsQuery();
@@ -45,7 +58,10 @@ export function AccountListWidget() {
 						<Card.Section withBorder inheritPadding py="xs">
 							<Group justify="space-between">
 								<Text fw={500}>
-									{account.label} ({types.findLabelByCode(account.type)})
+									{formatAccountTitle(
+										account,
+										types.findLabelByCode(account.type),
+									)}
 								</Text>
 								<Menu withinPortal position="bottom-end" shadow="sm">
 									<Menu.Target>
@@ -68,15 +84,21 @@ export function AccountListWidget() {
 										</Menu.Item>
 										<Menu.Item
 											component={Link}
-											to={`/accounts/${account.id}/transactions/new?type=income`}
+											to={transactionNewUrl('income', account.id)}
 										>
 											Доход
 										</Menu.Item>
 										<Menu.Item
 											component={Link}
-											to={`/accounts/${account.id}/transactions/new?type=expense`}
+											to={transactionNewUrl('expense', account.id)}
 										>
 											Расход
+										</Menu.Item>
+										<Menu.Item
+											component={Link}
+											to={`/accounts/${account.id}/transfers/new`}
+										>
+											Перевод
 										</Menu.Item>
 										<Menu.Item
 											c="red"
@@ -95,9 +117,7 @@ export function AccountListWidget() {
 						>
 							<Flex h={100} justify="center" align="center">
 								<Text size="xl" fw={700}>
-									{account.balance.toLocaleString('ru-RU', {
-										minimumFractionDigits: 2,
-									})}
+									{formatBalance(account.balance)}
 								</Text>
 							</Flex>
 						</Card.Section>

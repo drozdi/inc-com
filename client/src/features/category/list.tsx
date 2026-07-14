@@ -1,7 +1,11 @@
-import { useStoreCategories } from '@/entities/transaction-category';
-import { Stack, type StackProps } from '@mantine/core';
+import {
+	buildTransactionCategoriesQueryParams,
+	useTransactionCategoriesQuery,
+} from '@/entities/transaction-category';
+import { Stack, Loader, type StackProps } from '@mantine/core';
 import { useMemo } from 'react';
 import { CategotyItem } from './item';
+
 export function CategoryList({
 	account_id,
 	type,
@@ -10,16 +14,22 @@ export function CategoryList({
 	account_id: ICategory['account_id'];
 	type: string;
 }) {
-	const storeCategories = useStoreCategories();
-	const arr = storeCategories.selectAccount(account_id);
+	const { data, isLoading } = useTransactionCategoriesQuery(
+		buildTransactionCategoriesQueryParams(account_id),
+		{ enabled: Boolean(account_id) && !Number.isNaN(account_id) },
+	);
 
 	const categories = useMemo(
 		() =>
-			arr
+			(data?.items ?? [])
 				.filter((category) => category.type === type)
 				.sort((a, b) => a.label.localeCompare(b.label)),
-		[arr, type],
+		[data?.items, type],
 	);
+
+	if (isLoading) {
+		return <Loader size="sm" />;
+	}
 
 	return (
 		<Stack {...props}>

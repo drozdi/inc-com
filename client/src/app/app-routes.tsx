@@ -29,12 +29,14 @@ import { MainPage } from '@/pages/main-page';
 import {
 
 	TransactionCreatePage,
+	LegacyTransactionCreateRedirect,
 
 	TransactionEditPage,
 
 	TransactionsListPage,
 
 	TransferCreatePage,
+	TransferEditPage,
 
 } from '@/pages/transactions';
 
@@ -143,7 +145,10 @@ export function AppRouters() {
 
 								{ path: '', element: <TransactionsListPage /> },
 
-								{ path: 'new', element: <TransactionCreatePage /> },
+								{
+									path: 'new',
+									element: <LegacyTransactionCreateRedirect />,
+								},
 
 							],
 
@@ -165,7 +170,23 @@ export function AppRouters() {
 
 					children: [
 
+						{ path: 'new', element: <TransactionCreatePage /> },
+
 						{ path: ':id/edit', element: <TransactionEditPage /> },
+
+					],
+
+				},
+
+				{
+
+					path: 'transfers',
+
+					element: <Outlet />,
+
+					children: [
+
+						{ path: ':id/edit', element: <TransferEditPage /> },
 
 					],
 

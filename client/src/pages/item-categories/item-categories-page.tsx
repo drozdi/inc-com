@@ -1,25 +1,32 @@
 import { useItemCategoryCreate } from '@/entities/item-category';
 import { Template } from '@/layouts';
+import { getErrorMessage } from '@/shared/utils/error';
+import { notification } from '@/shared/notification';
 import { CategoryTreeWidget } from '@/widgets';
-import { Button, Group, Stack, TextInput } from '@mantine/core';
+import { Button, Group, Stack, TagsInput, Text, TextInput } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
 
 export function ItemCategoriesPage() {
 	const createMutation = useItemCategoryCreate();
 
 	const form = useForm({
-		initialValues: { name: '' },
+		initialValues: { name: '', keywords: [] as string[] },
 		validate: {
 			name: isNotEmpty('Введите название'),
 		},
 	});
 
-	async function handleAdd(values: { name: string }) {
-		await createMutation.mutateAsync({
-			name: values.name.trim(),
-			parentId: null,
-		});
-		form.reset();
+	async function handleAdd(values: { name: string; keywords: string[] }) {
+		try {
+			await createMutation.mutateAsync({
+				name: values.name.trim(),
+				parentId: null,
+				keywords: values.keywords.map((word) => word.trim()).filter(Boolean),
+			});
+			form.reset();
+		} catch (error) {
+			notification.error('Ошибка', getErrorMessage(error));
+		}
 	}
 
 	return (
@@ -27,19 +34,31 @@ export function ItemCategoriesPage() {
 			<Template.Title>Категории товаров</Template.Title>
 			<Stack gap="lg">
 				<form onSubmit={form.onSubmit(handleAdd)}>
-					<Group align="flex-end" wrap="wrap">
-						<TextInput
-							label="Новая категория"
-							placeholder="Название"
-							style={{ flex: 1, minWidth: 200 }}
-							{...form.getInputProps('name')}
+					<Stack gap="sm">
+						<Group align="flex-end" wrap="wrap">
+							<TextInput
+								label="Новая категория"
+								placeholder="Название"
+								style={{ flex: 1, minWidth: 200 }}
+								required
+								{...form.getInputProps('name')}
+							/>
+							<Button type="submit" loading={createMutation.isPending}>
+								Добавить
+							</Button>
+						</Group>
+						<TagsInput
+							label="Ключевые слова"
+							description="Используются при поиске категории по названиям товаров"
+							placeholder="Введите слово и нажмите Enter"
+							{...form.getInputProps('keywords')}
 						/>
-						<Button type="submit" loading={createMutation.isPending}>
-							Добавить
-						</Button>
-					</Group>
+					</Stack>
 				</form>
-				<CategoryTreeWidget />
+				<Stack gap="xs">
+					<Text fw={500}>Список категорий</Text>
+					<CategoryTreeWidget />
+				</Stack>
 			</Stack>
 		</>
 	);

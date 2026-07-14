@@ -7,10 +7,10 @@ export function mapAccountFromApi(data: ApiAccount): IAccount {
 	return {
 		id: data.id,
 		x_timestamp: data.updatedAt ?? '',
-		owner: '',
-		owner_id: data.masterId ?? 0,
+		owner: data.owner ?? '',
+		owner_id: data.ownerId ?? data.masterId ?? 0,
 		sort: data.order ?? 0,
-		label: data.name,
+		label: data.label ?? data.name ?? '',
 		balance: Number(data.balance ?? 0),
 		type: data.type ?? '',
 		color: data.color ?? '',
@@ -25,7 +25,7 @@ export function mapAccountToApi(
 	data: Partial<IAccount>,
 ): Record<string, unknown> {
 	const mapped: Record<string, unknown> = {};
-	if (data.label !== undefined) mapped['name'] = data.label;
+	if (data.label !== undefined) mapped['label'] = data.label;
 	if (data.sort !== undefined) mapped['order'] = data.sort;
 	for (const field of ['type', 'color', 'icon', 'balance', 'currency'] as const) {
 		if (data[field] !== undefined) mapped[field] = data[field];

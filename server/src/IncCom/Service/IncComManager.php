@@ -45,44 +45,45 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 
 class IncComManager extends AbstractManager  {
-    public function __construct (ValidatorInterface $Validator) {
+    public function __construct(
+        ValidatorInterface $Validator,
+        private readonly BalanceService $balanceService,
+        private readonly TransactionService $transactionService,
+        private readonly TransferService $transferService,
+        private readonly CategoryCopyService $categoryCopyService,
+        private readonly DeletionGuardService $deletionGuardService,
+    ) {
         parent::__construct($Validator);
     }
 
     public static function getSubscribedServices(): array
     {
-        return array_merge(parent::getSubscribedServices(), [
-            BalanceService::class => BalanceService::class,
-            TransactionService::class => TransactionService::class,
-            TransferService::class => TransferService::class,
-            CategoryCopyService::class => CategoryCopyService::class,
-            DeletionGuardService::class => DeletionGuardService::class,
-        ]);
+        return parent::getSubscribedServices();
     }
 
     public function getBalanceService(): BalanceService
     {
-        return $this->container->get(BalanceService::class);
+        return $this->balanceService;
     }
 
     public function getTransactionService(): TransactionService
     {
-        return $this->container->get(TransactionService::class);
+        return $this->transactionService;
     }
 
     public function getTransferService(): TransferService
     {
-        return $this->container->get(TransferService::class);
+        return $this->transferService;
     }
 
     public function getCategoryCopyService(): CategoryCopyService
     {
-        return $this->container->get(CategoryCopyService::class);
+        return $this->categoryCopyService;
     }
 
     public function getDeletionGuardService(): DeletionGuardService
     {
-        return $this->container->get(DeletionGuardService::class);
+        return $this->deletionGuardService;
     }
 
     public function transaction(): TransactionService

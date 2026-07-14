@@ -1,6 +1,6 @@
 import { useStoreUserProfile } from '@/entities/user';
 import { useStoreAccounts } from '@/entities/account';
-import { currencyFormat } from '@/shared/utils/currency-format';
+import { formatBalance } from '@/shared/utils/number-format';
 import { Avatar, NavLink, Stack, Text, alpha } from '@mantine/core';
 import { TbAccessPoint } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
@@ -23,7 +23,7 @@ function Item({ account }: { account: IAccount }) {
 						{account.owner_id === userData?.id ? 'Мой' : account.owner}
 					</Text>
 					<Text fz="xl">{account.label}</Text>
-					<Text fz="md">{currencyFormat(account.balance)}</Text>
+					<Text fz="md">{formatBalance(account.balance)}</Text>
 				</div>
 			}
 		></NavLink>

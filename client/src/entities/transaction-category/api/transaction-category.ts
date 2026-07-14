@@ -1,17 +1,11 @@
 import { requestAccountList } from '@/entities/account/api/account';
-
 import { api } from '@/shared/api';
-
+import { parsePaginatedResponse } from '@/shared/api/parse-paginated-response';
 import type { PaginatedResponse } from '@/shared/types';
-
 import type { ApiTransactionCategory } from '@/shared/types/api';
-
 import {
-
 	mapTransactionCategoryFromApi,
-
 	mapTransactionCategoryToApi,
-
 } from '@/shared/types/api';
 
 
@@ -82,23 +76,18 @@ async function fetchCategoriesForAccount(
 
 	const { page, size } = getPageSize(params);
 
-	const res = await api.get<PaginatedResponse<ApiTransactionCategory>>(
-
+	const res = await api.get<unknown>(
 		`/accounts/${accountId}/categories`,
-
 		{ params: { page, size } },
-
 	);
-
-	const mapped: PaginatedResponse<ICategory> = {
-
-		...res.data,
-
-		items: res.data.items.map(mapTransactionCategoryFromApi),
-
-	};
-
-	return toLegacyListResponse(mapped);
+	const paginated = parsePaginatedResponse(res.data, (item) =>
+		mapTransactionCategoryFromApi({
+			...(item as ApiTransactionCategory),
+			accountId:
+				(item as ApiTransactionCategory).accountId ?? accountId,
+		}),
+	);
+	return toLegacyListResponse(paginated);
 
 }
 

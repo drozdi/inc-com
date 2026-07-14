@@ -18,6 +18,7 @@ import {
 	TextInput,
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
+import { balanceInputProps, formatBalance } from '@/shared/utils/number-format';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,12 +53,12 @@ export function AccountForm({ id }: AccountFormProps) {
 	}, [account, isEdit]);
 
 	async function handleSave(values: IAccount) {
-		const { id: accountId, ...data } = values;
+		const { id: accountId, balance, ...data } = values;
 		if (isEdit && id) {
 			await updateMutation.mutateAsync({ id, ...data });
-			return { id, ...data } as IAccount;
+			return { id, ...data, balance } as IAccount;
 		}
-		return createMutation.mutateAsync(data);
+		return createMutation.mutateAsync({ ...data, balance });
 	}
 
 	async function saveAndNavigate() {
@@ -118,14 +119,25 @@ export function AccountForm({ id }: AccountFormProps) {
 				data={currencies}
 				{...form.getInputProps('currency')}
 			/>
-			<NumberInput
-				label="Баланс"
-				placeholder="Баланс"
-				step={0.01}
-				required
-				readOnly={isEdit}
-				{...form.getInputProps('balance')}
-			/>
+			{isEdit ? (
+				<TextInput
+					label="Баланс"
+					description="Стартовый капитал задаётся при создании; далее меняется через транзакции"
+					readOnly
+					value={formatBalance(form.values.balance)}
+				/>
+			) : (
+				<NumberInput
+					label="Стартовый капитал"
+					description="Указывается один раз при создании счёта"
+					placeholder="0,00"
+					min={0}
+					step={0.01}
+					required
+					{...balanceInputProps}
+					{...form.getInputProps('balance')}
+				/>
+			)}
 			<ColorInput
 				label="Цвет"
 				format="hex"

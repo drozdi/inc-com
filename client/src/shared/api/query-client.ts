@@ -5,7 +5,8 @@ export const queryClient = new QueryClient({
 	queryCache,
 	defaultOptions: {
 		queries: {
-			staleTime: 'static',
+			// Infinity: без авто-refetch, но invalidateQueries работает (в отличие от 'static')
+			staleTime: Infinity,
 			enabled: true,
 			throwOnError: false,
 			retry: false,

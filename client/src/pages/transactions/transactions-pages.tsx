@@ -6,7 +6,12 @@ import { TransactionTableWidget } from '@/widgets';
 import { Button, Group, Select, Stack } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+	parseAccountIdParam,
+	parseTransactionType,
+	transactionNewUrl,
+} from '@/shared/lib/transaction-url';
 
 export function TransactionsListPage() {
 	const { id } = useParams();
@@ -64,14 +69,14 @@ export function TransactionsListPage() {
 					<Group grow>
 						<Button
 							component={Link}
-							to={`/accounts/${accountId}/transactions/new?type=income`}
+							to={transactionNewUrl('income', accountId)}
 							color="green"
 						>
 							Доход
 						</Button>
 						<Button
 							component={Link}
-							to={`/accounts/${accountId}/transactions/new?type=expense`}
+							to={transactionNewUrl('expense', accountId)}
 							color="red"
 						>
 							Расход
@@ -117,14 +122,14 @@ export function TransactionsListPage() {
 					<Group mt={24}>
 						<Button
 							component={Link}
-							to={`/accounts/${accountId}/transactions/new?type=income`}
+							to={transactionNewUrl('income', accountId)}
 							color="green"
 						>
 							Доход
 						</Button>
 						<Button
 							component={Link}
-							to={`/accounts/${accountId}/transactions/new?type=expense`}
+							to={transactionNewUrl('expense', accountId)}
 							color="red"
 						>
 							Расход
@@ -145,11 +150,10 @@ export function TransactionsListPage() {
 }
 
 export function TransactionCreatePage() {
-	const { id } = useParams();
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
-	const accountId = Number(id);
-	const type = (searchParams.get('type') as TransactionType) ?? 'expense';
+	const type = parseTransactionType(searchParams.get('type'));
+	const defaultAccountId = parseAccountIdParam(searchParams.get('accountId'));
 	const isIncome = type === 'income';
 
 	return (
@@ -157,10 +161,26 @@ export function TransactionCreatePage() {
 			<Template.Title>{isIncome ? 'Новый доход' : 'Новый расход'}</Template.Title>
 			<TransactionForm
 				type={type}
-				defaultAccountId={accountId}
-				onSuccess={() => navigate(`/accounts/${accountId}/transactions`)}
+				defaultAccountId={defaultAccountId}
+				onSuccess={(transaction) =>
+					navigate(`/accounts/${transaction.accountId}/transactions`)
+				}
 			/>
 		</>
+	);
+}
+
+export function LegacyTransactionCreateRedirect() {
+	const { id } = useParams();
+	const [searchParams] = useSearchParams();
+	const type = parseTransactionType(searchParams.get('type'));
+	const accountId = parseAccountIdParam(id ?? null);
+
+	return (
+		<Navigate
+			to={transactionNewUrl(type, accountId)}
+			replace
+		/>
 	);
 }
 
@@ -191,7 +211,26 @@ export function TransferCreatePage() {
 		<>
 			<Template.Title>Новый перевод</Template.Title>
 			<TransferForm
+				defaultFromAccountId={accountId}
 				onSuccess={() => navigate(`/accounts/${accountId}/transactions`)}
+			/>
+		</>
+	);
+}
+
+export function TransferEditPage() {
+	const { id } = useParams();
+	const navigate = useNavigate();
+	const transferId = Number(id);
+
+	return (
+		<>
+			<Template.Title>Редактирование перевода</Template.Title>
+			<TransferForm
+				id={transferId}
+				onSuccess={(transfer) =>
+					navigate(`/accounts/${transfer.fromAccountId}/transactions`)
+				}
 			/>
 		</>
 	);

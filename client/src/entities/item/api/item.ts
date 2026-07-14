@@ -1,9 +1,7 @@
 import { api } from '@/shared/api';
-
+import { parsePaginatedResponse } from '@/shared/api/parse-paginated-response';
 import type { PaginatedResponse } from '@/shared/types';
-
 import type { ApiItem } from '@/shared/types/api';
-
 import type { IItemFilters } from '../model/types';
 
 
@@ -86,13 +84,11 @@ export async function requestItemList(
 
 
 
-	const res = await api.get<PaginatedResponse<ApiItem>>('/items', {
-
+	const res = await api.get<unknown>('/items', {
 		params: queryParams,
-
 	});
-
-	return toLegacyListResponse(res.data);
+	const paginated = parsePaginatedResponse(res.data, (item) => item as IItem);
+	return toLegacyListResponse(paginated);
 
 }
 

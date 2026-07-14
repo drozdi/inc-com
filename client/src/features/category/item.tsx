@@ -1,35 +1,49 @@
+import {
+	useTransactionCategoryDelete,
+	useTransactionCategoryUpdate,
+} from '@/entities/transaction-category';
 import { useStoreUserProfile } from '@/entities/user';
-import { useStoreCategories } from '@/entities/transaction-category';
+import { notification } from '@/shared/notification';
+import { getErrorMessage } from '@/shared/utils/error';
 import { ActionIcon, Group, Text, TextInput, Tooltip } from '@mantine/core';
 import { useState } from 'react';
 import { TbFileDots, TbFileLike, TbX } from 'react-icons/tb';
 
 export function CategotyItem({ category }: { category: ICategory }) {
-	const storeCategories = useStoreCategories();
+	const updateMutation = useTransactionCategoryUpdate();
+	const deleteMutation = useTransactionCategoryDelete();
 	const { userData } = useStoreUserProfile();
 	const [isEdit, setEdit] = useState(false);
 	const isAction = category.owner_id === userData?.id;
 	const [label, setLabel] = useState<string>(category.label);
-	const [mcc, setMcc] = useState<string>(String(category.mcc));
 
-	const handlerSave = () => {
-		const data: Partial<ICategory> = {
-			label,
-		};
-		if (mcc) {
-			data.mcc = Number(mcc);
+	const isSaving = updateMutation.isPending || deleteMutation.isPending;
+
+	async function handlerSave() {
+		try {
+			await updateMutation.mutateAsync({
+				id: category.id,
+				label: label.trim(),
+			});
+			setEdit(false);
+		} catch (error) {
+			notification.error('Ошибка', getErrorMessage(error));
 		}
-		storeCategories.update(category.id, data);
-		setEdit(false);
-	};
-	const handlerKeyPress = ({ key }: React.KeyboardEvent) => {
+	}
+
+	function handlerKeyPress({ key }: React.KeyboardEvent) {
 		if (key === 'Enter') {
-			handlerSave();
+			void handlerSave();
 		}
-	};
-	const handlerRemove = (category: ICategory) => {
-		storeCategories.delete(category.id);
-	};
+	}
+
+	async function handlerRemove(categoryToRemove: ICategory) {
+		try {
+			await deleteMutation.mutateAsync(categoryToRemove.id);
+		} catch (error) {
+			notification.error('Ошибка', getErrorMessage(error));
+		}
+	}
 
 	return (
 		<Group>
@@ -37,49 +51,40 @@ export function CategotyItem({ category }: { category: ICategory }) {
 				<>
 					<TextInput
 						flex="1"
-						defaultValue={label}
+						value={label}
 						onChange={({ target }) => setLabel(target.value)}
 						onKeyDown={handlerKeyPress}
-						rightSectionWidth={150}
-						rightSection={
-							<TextInput
-								placeholder="MCC Code"
-								defaultValue={mcc}
-								onChange={({ target }) => setMcc(target.value)}
-								onKeyDown={handlerKeyPress}
-							/>
-						}
 					/>
 					<ActionIcon
-						loading={storeCategories.isLoading}
+						loading={isSaving}
 						color="green"
-						onClick={handlerSave}
+						onClick={() => void handlerSave()}
 					>
 						<TbFileLike />
 					</ActionIcon>
 				</>
 			) : (
-				<Text flex="1">
-					{label}
-					{mcc ? ` (MCC ${mcc})` : ''}
-				</Text>
+				<Text flex="1">{label}</Text>
 			)}
 			{isAction && !isEdit && (
 				<Group>
 					<Tooltip label="Переиминовать">
 						<ActionIcon
-							loading={storeCategories.isLoading}
+							loading={isSaving}
 							color="yellow"
-							onClick={() => setEdit(true)}
+							onClick={() => {
+								setLabel(category.label);
+								setEdit(true);
+							}}
 						>
 							<TbFileDots />
 						</ActionIcon>
 					</Tooltip>
 					<Tooltip label="Удалить">
 						<ActionIcon
-							loading={storeCategories.isLoading}
+							loading={isSaving}
 							color="red"
-							onClick={() => handlerRemove(category)}
+							onClick={() => void handlerRemove(category)}
 						>
 							<TbX />
 						</ActionIcon>

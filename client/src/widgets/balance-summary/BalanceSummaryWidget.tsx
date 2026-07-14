@@ -1,5 +1,6 @@
 import { useAccountsQuery } from '@/entities/account';
 import { Card, Group, Loader, SimpleGrid, Stack, Text } from '@mantine/core';
+import { formatBalance } from '@/shared/utils/number-format';
 import { useMemo } from 'react';
 
 export function BalanceSummaryWidget() {
@@ -23,9 +24,7 @@ export function BalanceSummaryWidget() {
 						Общий баланс
 					</Text>
 					<Text size="xl" fw={700}>
-						{totalBalance.toLocaleString('ru-RU', {
-							minimumFractionDigits: 2,
-						})}
+						{formatBalance(totalBalance)}
 					</Text>
 				</Stack>
 			</Card>

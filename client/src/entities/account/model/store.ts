@@ -9,6 +9,7 @@ import {
 	requestAccountRead,
 	requestAccountUpdate,
 } from '../api/account';
+import { ACCOUNTS_LIST_QUERY_KEY } from '../api/queries';
 
 export const useStoreAccounts = create<IStoreAccount>((set, get) => ({
 	isLoading: false,
@@ -26,7 +27,7 @@ export const useStoreAccounts = create<IStoreAccount>((set, get) => ({
 		});
 		try {
 			const res = await queryClient.fetchQuery({
-				queryKey: ['accounts', { limit: 100, offset: 0 }],
+				queryKey: ACCOUNTS_LIST_QUERY_KEY,
 				queryFn: async () =>
 					await requestAccountList({ limit: 100, offset: 0 }),
 			});

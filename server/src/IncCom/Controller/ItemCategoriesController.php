@@ -188,7 +188,18 @@ class ItemCategoriesController extends AbstractController
 
     }
 
+    #[Route('/{id}', name: 'read', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function read(int $id, #[CurrentUser] ?User $user): JsonResponse
+    {
+        if ($user === null) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
 
+        $tag = $this->findTagOr404($id);
+        $this->denyAccessUnlessGranted(ItemVoter::MANAGE, $tag);
+
+        return $this->json($this->mapTag($tag));
+    }
 
     #[Route('/{id}', name: 'update', methods: ['PUT', 'PATCH'], requirements: ['id' => '\d+'])]
 

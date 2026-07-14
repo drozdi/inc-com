@@ -17,6 +17,13 @@ const TYPE_LABELS: Record<string, string> = {
 	expense: 'Расход',
 };
 
+function getTransactionEditPath(transaction: ITransaction): string {
+	if (transaction.transferId) {
+		return `/transfers/${transaction.transferId}/edit`;
+	}
+	return `/transactions/${transaction.id}/edit`;
+}
+
 function formatDate(value: string): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) {
@@ -81,12 +88,14 @@ export function TransactionTableWidget({
 						<Table.Tr key={transaction.id}>
 							<Table.Td>{formatDate(transaction.date)}</Table.Td>
 							<Table.Td>
-								{TYPE_LABELS[transaction.type] ?? transaction.type}
+								{transaction.transferId
+									? 'Перевод'
+									: (TYPE_LABELS[transaction.type] ?? transaction.type)}
 							</Table.Td>
 							<Table.Td>
 								<Anchor
 									component={Link}
-									to={`/transactions/${transaction.id}/edit`}
+									to={getTransactionEditPath(transaction)}
 								>
 									{Number(transaction.amount).toLocaleString('ru-RU', {
 										minimumFractionDigits: 2,

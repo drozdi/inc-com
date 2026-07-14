@@ -1,5 +1,8 @@
 import { useItemCreate, useItemQuery, useItemUpdate } from '@/entities/item';
-import { useItemCategoriesQuery } from '@/entities/item-category';
+import {
+	ITEM_CATEGORIES_ALL_PARAMS,
+	useItemCategoriesQuery,
+} from '@/entities/item-category';
 import { defaultItem } from '@/entities/item/model/defaults';
 import type { IItemCategory } from '@/entities/item-category/model/types';
 import { Template } from '@/layouts';
@@ -18,15 +21,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 export function ItemFormPage() {
 	const { id } = useParams();
-	const itemId = id ? Number(id) : undefined;
-	const isEdit = !!itemId;
+	const itemId =
+		id && !Number.isNaN(Number(id)) ? Number(id) : undefined;
+	const isEdit = itemId !== undefined && itemId > 0;
 	const navigate = useNavigate();
 
 	const { data: item, isLoading } = useItemQuery(itemId);
-	const { data: categoriesData } = useItemCategoriesQuery({
-		limit: 100,
-		offset: 0,
-	});
+	const { data: categoriesData } = useItemCategoriesQuery(
+		ITEM_CATEGORIES_ALL_PARAMS,
+	);
 	const createMutation = useItemCreate();
 	const updateMutation = useItemUpdate();
 

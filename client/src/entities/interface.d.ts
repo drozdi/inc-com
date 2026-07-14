@@ -153,11 +153,9 @@ interface ICategory {
 
 
 interface IStoreCategory extends IStore<ICategory> {
-
+	loadedAccountIds?: number[];
 	selectAccount: (account_id: ICategory['account_id']) => ICategory[];
-
 	findLabelById: (id: ICategory['id']) => ICategory['label'];
-
 }
 
 

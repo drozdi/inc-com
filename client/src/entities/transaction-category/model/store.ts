@@ -14,11 +14,13 @@ export const useStoreCategories = create<IStoreCategory>((set, get) => ({
 	isLoading: false,
 	error: '',
 	list: [],
+	loadedAccountIds: [] as number[],
 	load: async (reload = false) => {
 		if (reload) {
 			queryClient.removeQueries({
 				queryKey: ['categories'],
 			});
+			set({ loadedAccountIds: [] });
 		}
 		set({
 			isLoading: true,
@@ -34,6 +36,9 @@ export const useStoreCategories = create<IStoreCategory>((set, get) => ({
 			set({
 				list: res.items,
 				isLoading: false,
+				loadedAccountIds: [
+					...new Set(res.items.map((item) => item.account_id)),
+				],
 			});
 		} catch (error: unknown) {
 			console.error(error);
@@ -44,13 +49,26 @@ export const useStoreCategories = create<IStoreCategory>((set, get) => ({
 		}
 	},
 	selectAccount: (account_id) => {
-		const cached = get().list.filter((item) => item.account_id === account_id);
-		if (cached.length > 0) {
+		if (!account_id || Number.isNaN(account_id)) {
+			return [];
+		}
+
+		const state = get();
+		const cached = state.list.filter((item) => item.account_id === account_id);
+		const loadedAccountIds = state.loadedAccountIds ?? [];
+
+		if (loadedAccountIds.includes(account_id)) {
 			return cached;
 		}
+
+		set({ loadedAccountIds: [...loadedAccountIds, account_id] });
+
 		void queryClient
 			.fetchQuery({
-				queryKey: ['categories', { accountId: account_id, limit: 100, offset: 0 }],
+				queryKey: [
+					'categories',
+					{ accountId: account_id, limit: 100, offset: 0 },
+				],
 				queryFn: async () =>
 					await requestCategoryList({
 						accountId: account_id,
@@ -59,12 +77,23 @@ export const useStoreCategories = create<IStoreCategory>((set, get) => ({
 					}),
 			})
 			.then((res) => {
-				const merged = [
-					...get().list.filter((item) => item.account_id !== account_id),
-					...res.items,
-				];
-				set({ list: merged });
+				set({
+					list: [
+						...get().list.filter((item) => item.account_id !== account_id),
+						...res.items,
+					],
+				});
+			})
+			.catch((error: unknown) => {
+				const currentLoaded = get().loadedAccountIds ?? [];
+				set({
+					loadedAccountIds: currentLoaded.filter(
+						(loadedId: number) => loadedId !== account_id,
+					),
+					error: getErrorMessage(error),
+				});
 			});
+
 		return cached;
 	},
 	detail: async (id) => {

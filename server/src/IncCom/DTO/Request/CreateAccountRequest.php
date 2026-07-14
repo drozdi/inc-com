@@ -10,8 +10,8 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 class CreateAccountRequest
 {
-    #[Assert\NotBlank(message: 'Name is required')]
-    public ?string $name = null;
+    #[Assert\NotBlank(message: 'Label is required')]
+    public ?string $label = null;
 
     #[Assert\NotBlank(message: 'Type is required')]
     #[Assert\Choice(
@@ -25,4 +25,8 @@ class CreateAccountRequest
     public ?string $currency = 'RUB';
 
     public ?int $order = null;
+
+    #[Assert\Type(type: 'numeric', message: 'Balance must be a number')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'Balance cannot be negative')]
+    public int|float|string|null $balance = null;
 }

@@ -38,6 +38,7 @@ interface TransactionFormValues {
 	fpd: string;
 	fp: string;
 	fd: string;
+	mcc: string;
 	items: Array<{ itemId: number; quantity: string; price: string }>;
 }
 
@@ -70,7 +71,6 @@ export function TransactionForm({
 	const isExpense = type === 'expense';
 
 	const form = useForm<TransactionFormValues>({
-		mode: 'uncontrolled',
 		initialValues: {
 			type,
 			accountId: defaultAccountId ? String(defaultAccountId) : null,
@@ -83,6 +83,7 @@ export function TransactionForm({
 			fpd: '',
 			fp: '',
 			fd: '',
+			mcc: '',
 			items: [],
 		},
 		validate: {
@@ -100,8 +101,9 @@ export function TransactionForm({
 
 	const accountId = form.values.accountId ? Number(form.values.accountId) : 0;
 
-	const { data: accountsData } = useAccountsQuery();
-	const { data: categoriesData } = useTransactionCategoriesQuery(
+	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
+	const { data: categoriesData, isFetching: isCategoriesFetching } =
+		useTransactionCategoriesQuery(
 		{ accountId, limit: 100, offset: 0 },
 		{ enabled: accountId > 0 },
 	);
@@ -130,31 +132,67 @@ export function TransactionForm({
 	);
 
 	useEffect(() => {
-		if (!transactionData?.id || !id) {
+		if (accountId <= 0) {
+			if (form.values.categoryId !== null) {
+				form.setFieldValue('categoryId', null);
+			}
 			return;
 		}
 
-		form.setValues({
-			type: transactionData.type,
-			accountId: String(transactionData.accountId),
-			categoryId: transactionData.categoryId
-				? String(transactionData.categoryId)
-				: null,
-			amount: Number(transactionData.amount),
-			date: toFormDate(transactionData.date),
-			comment: transactionData.comment ?? '',
-			isManualAmount: transactionData.isManualAmount,
-			fn: transactionData.fn ?? '',
-			fpd: transactionData.fpd ?? '',
-			fp: transactionData.fp ?? '',
-			fd: transactionData.fd ?? '',
-			items: transactionData.items.map((item) => ({
-				itemId: item.itemId,
-				quantity: item.quantity,
-				price: item.price,
-			})),
-		});
-	}, [transactionData, id]);
+		if (isCategoriesFetching) {
+			return;
+		}
+
+		if (categoryOptions.length === 0) {
+			if (form.values.categoryId !== null) {
+				form.setFieldValue('categoryId', null);
+			}
+			return;
+		}
+
+		const currentCategoryId = form.values.categoryId;
+		const isCurrentValid = categoryOptions.some(
+			(option) => option.value === currentCategoryId,
+		);
+
+		if (!isCurrentValid) {
+			const firstCategory = categoryOptions[0];
+			if (firstCategory) {
+				form.setFieldValue('categoryId', firstCategory.value);
+			}
+		}
+	}, [accountId, categoryOptions, isCategoriesFetching]);
+
+	useEffect(() => {
+		if (transactionData?.id && id) {
+			form.setValues({
+				type: transactionData.type,
+				accountId: String(transactionData.accountId),
+				categoryId: transactionData.categoryId
+					? String(transactionData.categoryId)
+					: null,
+				amount: Number(transactionData.amount),
+				date: toFormDate(transactionData.date),
+				comment: transactionData.comment ?? '',
+				isManualAmount: transactionData.isManualAmount,
+				fn: transactionData.fn ?? '',
+				fpd: transactionData.fpd ?? '',
+				fp: transactionData.fp ?? '',
+				fd: transactionData.fd ?? '',
+				mcc: transactionData.mcc ?? '',
+				items: transactionData.items.map((item) => ({
+					itemId: item.itemId,
+					quantity: item.quantity,
+					price: item.price,
+				})),
+			});
+			return;
+		}
+
+		if (!id && defaultAccountId) {
+			form.setFieldValue('accountId', String(defaultAccountId));
+		}
+	}, [transactionData, id, defaultAccountId]);
 
 	function applyQrData(data: ParsedFiscalQr) {
 		if (data.fn) form.setFieldValue('fn', data.fn);
@@ -180,6 +218,7 @@ export function TransactionForm({
 			payload.fpd = values.fpd || null;
 			payload.fp = values.fp || null;
 			payload.fd = values.fd || null;
+			payload.mcc = values.mcc.trim() || null;
 
 			if (values.isManualAmount) {
 				payload.amount = Number(values.amount).toFixed(2);
@@ -220,6 +259,9 @@ export function TransactionForm({
 	const loading = createMutation.isPending || updateMutation.isPending;
 	const isManualAmount = form.values.isManualAmount;
 
+	const accountIdProps = form.getInputProps('accountId');
+	const categoryIdProps = form.getInputProps('categoryId');
+
 	return (
 		<>
 			<form onSubmit={form.onSubmit(handleSubmit)}>
@@ -227,24 +269,31 @@ export function TransactionForm({
 				<Select
 					label="Счёт"
 					data={accountOptions}
-					key={form.key('accountId')}
-					{...form.getInputProps('accountId')}
+					{...accountIdProps}
 					searchable
 					required
+					placeholder={
+						isAccountsLoading && !accountOptions.length
+							? 'Загрузка…'
+							: 'Выберите счёт'
+					}
+					nothingFoundMessage="Счета не найдены"
 					w="100%"
 				/>
 				<Select
 					label="Категория"
 					data={categoryOptions}
-					key={form.key('categoryId')}
-					{...form.getInputProps('categoryId')}
+					key={`category-${accountId}`}
+					{...categoryIdProps}
 					searchable
 					required
+					disabled={accountId <= 0}
+					placeholder={accountId <= 0 ? 'Сначала выберите счёт' : 'Выберите категорию'}
+					nothingFoundMessage="Категории не найдены"
 					w="100%"
 				/>
 				<DateTimePicker
 					label="Дата"
-					key={form.key('date')}
 					{...form.getInputProps('date')}
 					required
 					w="100%"
@@ -258,31 +307,33 @@ export function TransactionForm({
 						</Group>
 						<TextInput
 							label="ФН"
-							key={form.key('fn')}
 							{...form.getInputProps('fn')}
 							w="100%"
 						/>
 						<TextInput
 							label="ФПД"
-							key={form.key('fpd')}
 							{...form.getInputProps('fpd')}
 							w="100%"
 						/>
 						<TextInput
 							label="ФП"
-							key={form.key('fp')}
 							{...form.getInputProps('fp')}
 							w="100%"
 						/>
 						<TextInput
 							label="ФД"
-							key={form.key('fd')}
 							{...form.getInputProps('fd')}
+							w="100%"
+						/>
+						<TextInput
+							label="MCC"
+							description="Необязательно"
+							placeholder="Код категории мерчанта"
+							{...form.getInputProps('mcc')}
 							w="100%"
 						/>
 						<Switch
 							label="Ручной ввод суммы"
-							key={form.key('isManualAmount')}
 							{...form.getInputProps('isManualAmount', { type: 'checkbox' })}
 						/>
 						{isManualAmount ? (
@@ -290,7 +341,6 @@ export function TransactionForm({
 								label="Сумма"
 								decimalScale={2}
 								min={0}
-								key={form.key('amount')}
 								{...form.getInputProps('amount')}
 								required
 								w="100%"
@@ -308,7 +358,6 @@ export function TransactionForm({
 						label="Сумма"
 						decimalScale={2}
 						min={0}
-						key={form.key('amount')}
 						{...form.getInputProps('amount')}
 						required
 						w="100%"
@@ -316,7 +365,6 @@ export function TransactionForm({
 				)}
 				<TextInput
 					label="Комментарий"
-					key={form.key('comment')}
 					{...form.getInputProps('comment')}
 					w="100%"
 				/>

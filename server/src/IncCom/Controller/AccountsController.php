@@ -131,6 +131,7 @@ class AccountsController extends AbstractController
         $this->denyAccessUnlessGranted(AccountVoter::EDIT, $account);
 
         $data = $this->mapAccountRequestToLegacy($request->toArray());
+        unset($data['balance']);
 
         $this->incComManager->getEntityManager()->getConnection()->beginTransaction();
         try {
@@ -254,13 +255,15 @@ class AccountsController extends AbstractController
     {
         $mapped = [];
 
-        if (array_key_exists('name', $data)) {
+        if (array_key_exists('label', $data)) {
+            $mapped['label'] = $data['label'];
+        } elseif (array_key_exists('name', $data)) {
             $mapped['label'] = $data['name'];
         }
         if (array_key_exists('order', $data)) {
             $mapped['sort'] = $data['order'];
         }
-        foreach (['description', 'currency', 'type', 'color', 'icon', 'number'] as $field) {
+        foreach (['description', 'currency', 'type', 'color', 'icon', 'number', 'balance'] as $field) {
             if (array_key_exists($field, $data)) {
                 $mapped[$field] = $data[$field];
             }
@@ -279,7 +282,7 @@ class AccountsController extends AbstractController
 
         $result = [
             'id' => $account->getId(),
-            'name' => $account->getLabel(),
+            'label' => $account->getLabel(),
             'description' => $account->getDescription(),
             'currency' => $account->getCurrency(),
             'type' => $account->getType(),
@@ -299,9 +302,26 @@ class AccountsController extends AbstractController
                 fn ($u) => ['id' => $u->getId(), 'login' => $u->getLogin()],
                 $account->getUsers()->toArray(),
             );
+        } else {
+            $result['ownerId'] = $master?->getId();
+            $result['owner'] = $this->formatUserDisplayName($master);
         }
 
         return $result;
+    }
+
+    private function formatUserDisplayName(?User $user): ?string
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        $alias = $user->getAlias();
+        if ($alias !== null && trim($alias) !== '') {
+            return trim($alias);
+        }
+
+        return $user->getLogin();
     }
 
     /**

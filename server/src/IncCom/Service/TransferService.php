@@ -31,6 +31,7 @@ class TransferService
         return $this->em->wrapInTransaction(function () use ($data, $author): Transfer {
             $fromAccount = $this->resolveAccount($data['fromAccount'] ?? $data['fromAccountId'] ?? null);
             $toAccount = $this->resolveAccount($data['toAccount'] ?? $data['toAccountId'] ?? null);
+            $this->assertTransferAccountsValid($fromAccount, $toAccount);
             $amount = (string) ($data['amount'] ?? '');
             $date = $this->resolveDate($data['date'] ?? null);
             $comment = $data['comment'] ?? null;
@@ -230,5 +231,18 @@ class TransferService
         }
 
         throw new \InvalidArgumentException('Transfer date is required.');
+    }
+
+    private function assertTransferAccountsValid(Account $fromAccount, Account $toAccount): void
+    {
+        if ($fromAccount->getId() === $toAccount->getId()) {
+            throw new \InvalidArgumentException('Transfer accounts must be different.');
+        }
+
+        if ($fromAccount->getCurrency() !== $toAccount->getCurrency()) {
+            throw new \InvalidArgumentException(
+                'Transfer is only allowed between accounts with the same currency.',
+            );
+        }
     }
 }
