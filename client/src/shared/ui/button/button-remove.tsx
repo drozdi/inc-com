@@ -1,10 +1,20 @@
-import { ActionIcon } from '@mantine/core';
-import { TbCircleX } from 'react-icons/tb';
+import { memo } from "react";
+import { TbCircleX } from "react-icons/tb";
+import { ButtonIcon, type ButtonIconProps } from "./button-icon";
 
-export function ButtonRemove({ children = <TbCircleX />, ...props }) {
+export interface ButtonRemoveProps extends ButtonIconProps {}
+
+const DEFAULT_ICON = <TbCircleX />;
+
+function ButtonRemoveRoot({
+	children = DEFAULT_ICON,
+	...props
+}: ButtonRemoveProps) {
 	return (
-		<ActionIcon color="red" {...props}>
+		<ButtonIcon color="red" {...props}>
 			{children}
-		</ActionIcon>
+		</ButtonIcon>
 	);
 }
+
+export const ButtonRemove = memo(ButtonRemoveRoot);

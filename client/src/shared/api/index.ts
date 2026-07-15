@@ -5,7 +5,7 @@ export { queryClient } from './query-client';
 
 export const api = new AxiosInterceptor({
 	baseURL: $setting.get('URL_API'),
-	message401: 'Signature has expired.',
+	message401: 'Expired JWT Token',
 	accessToken: 'token',
 	refreshToken: 'refresh_token',
 	accessTokenKey: $setting.get('ACCESS_TOKEN_KEY'),

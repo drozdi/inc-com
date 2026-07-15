@@ -2,103 +2,176 @@ import {
 	useItemDelete,
 	useItemsQuery,
 } from '@/entities/item';
+import type { IItem } from '@/entities/item/model/types';
+import {
+	ITEM_CATEGORIES_ALL_PARAMS,
+	useItemCategoriesQuery,
+} from '@/entities/item-category';
+import {
+	buildCategoriesById,
+	buildCategoryLabel,
+} from '@/entities/item-category/lib/category-options';
 import { ItemCategoryFilterSelect } from '@/features/item-filter';
 import { Template } from '@/layouts';
-import {
-	ActionIcon,
-	Anchor,
-	Button,
-	Group,
-	Loader,
-	Stack,
-	Table,
-	Text,
-} from '@mantine/core';
-import { useMemo, useState } from 'react';
+import { DataColumn, TableData, TableSearch } from '@/shared/ui/table';
+import { Anchor, Button, Group, Stack } from '@mantine/core';
+import { useCallback, useMemo, useState } from 'react';
 import { TbPencil, TbTrash } from 'react-icons/tb';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+function formatEmptyValue(value: string | null | undefined): string {
+	return value?.trim() ? value : '—';
+}
 
 export function ItemsListPage() {
+	const navigate = useNavigate();
 	const [categoryId, setCategoryId] = useState<number | null>(null);
+	const [search, setSearch] = useState('');
 	const queryParams = useMemo(
 		() => ({
 			limit: 100,
 			offset: 0,
 			...(categoryId !== null ? { category: categoryId } : {}),
+			...(search.trim() ? { search: search.trim() } : {}),
 		}),
-		[categoryId],
+		[categoryId, search],
 	);
 	const { data, isLoading } = useItemsQuery(queryParams);
+	const { data: categoriesData } = useItemCategoriesQuery(ITEM_CATEGORIES_ALL_PARAMS);
 	const deleteMutation = useItemDelete();
 	const items = data?.items ?? [];
 
-	async function handleDelete(id: number) {
-		await deleteMutation.mutateAsync(id);
-	}
+	const categoryLabelsById = useMemo(() => {
+		const categories = categoriesData?.items ?? [];
+		const categoriesById = buildCategoriesById(categories);
+		const labels = new Map<number, string>();
+
+		for (const category of categories) {
+			labels.set(category.id, buildCategoryLabel(category, categoriesById));
+		}
+
+		return labels;
+	}, [categoriesData?.items]);
+
+	const formatItemCategories = useCallback(
+		(categoryIds: number[]) => {
+			if (!categoryIds.length) {
+				return '—';
+			}
+
+			return categoryIds
+				.map((id) => categoryLabelsById.get(id))
+				.filter(Boolean)
+				.join(', ');
+		},
+		[categoryLabelsById],
+	);
+
+	const handleDelete = useCallback(
+		async (id: number) => {
+			await deleteMutation.mutateAsync(id);
+		},
+		[deleteMutation],
+	);
+
+	const rowActions = useMemo(
+		() => [
+			{
+				id: 'edit',
+				label: 'Редактировать',
+				icon: <TbPencil size={16} />,
+				onClick: (item: IItem) => navigate(`/items/${item.id}`),
+			},
+			{
+				id: 'delete',
+				label: 'Удалить',
+				icon: <TbTrash size={16} />,
+				color: 'red',
+				onClick: (item: IItem) => {
+					void handleDelete(item.id);
+				},
+			},
+		],
+		[handleDelete, navigate],
+	);
+
+	const hasFilters = categoryId !== null || search.trim().length > 0;
+	const emptyText = hasFilters ? 'Товары не найдены' : 'Товаров нет';
 
 	return (
 		<>
 			<Template.Title>Товары</Template.Title>
 			<Stack gap="md">
-				<Group justify="space-between" align="flex-end">
-					<ItemCategoryFilterSelect
-						value={categoryId}
-						onChange={setCategoryId}
-					/>
+				<Group justify="space-between" align="flex-end" wrap="wrap">
+					<Group align="flex-end" wrap="wrap">
+						<TableSearch
+							label="Название"
+							placeholder="Введите название товара"
+							onChange={setSearch}
+							maw={320}
+							w="100%"
+						/>
+						<ItemCategoryFilterSelect
+							value={categoryId}
+							onChange={setCategoryId}
+						/>
+					</Group>
 					<Button component={Link} to="/items/new">
 						Создать товар
 					</Button>
 				</Group>
-			{isLoading ? (
-				<Loader />
-			) : items.length ? (
-				<Table striped highlightOnHover withTableBorder>
-					<Table.Thead>
-						<Table.Tr>
-							<Table.Th>Название</Table.Th>
-							<Table.Th>Ед. изм.</Table.Th>
-							<Table.Th>Описание</Table.Th>
-							<Table.Th w={80} />
-						</Table.Tr>
-					</Table.Thead>
-					<Table.Tbody>
-						{items.map((item) => (
-							<Table.Tr key={item.id}>
-								<Table.Td>
-									<Anchor component={Link} to={`/items/${item.id}`}>
-										{item.name}
-									</Anchor>
-								</Table.Td>
-								<Table.Td>{item.unit ?? '—'}</Table.Td>
-								<Table.Td>{item.description ?? '—'}</Table.Td>
-								<Table.Td>
-									<Group gap={4}>
-										<ActionIcon
-											component={Link}
-											to={`/items/${item.id}`}
-											variant="subtle"
-										>
-											<TbPencil />
-										</ActionIcon>
-										<ActionIcon
-											color="red"
-											variant="subtle"
-											onClick={() => handleDelete(item.id)}
-											loading={deleteMutation.isPending}
-										>
-											<TbTrash />
-										</ActionIcon>
-									</Group>
-								</Table.Td>
-							</Table.Tr>
-						))}
-					</Table.Tbody>
-				</Table>
-			) : (
-				<Text c="dimmed">
-					{categoryId !== null ? 'Товаров в категории нет' : 'Товаров нет'}
-				</Text>
-			)}
+				<TableData<IItem>
+					data={items}
+					loading={isLoading}
+					rowActions={rowActions}
+					rowActionsOnHover={false}
+					withPagination={false}
+					withTableBorder
+					storage="items.list"
+					noDataText={emptyText}
+					w="100%"
+				>
+					<DataColumn<IItem>
+						field="name"
+						header="Название"
+						sortable
+						resizable
+						body={(item) => (
+							<Anchor component={Link} to={`/items/${item.id}`}>
+								{item.name}
+							</Anchor>
+						)}
+					/>
+					<DataColumn<IItem>
+						field="categoryIds"
+						header="Категории"
+						sortable={false}
+						resizable
+						body={(item) => formatItemCategories(item.categoryIds)}
+					/>
+					<DataColumn<IItem>
+						field="unit"
+						header="Ед. изм."
+						sortable
+						resizable
+						body={(item) => formatEmptyValue(item.unit)}
+					/>
+					<DataColumn<IItem>
+						field="description"
+						header="Описание"
+						sortable
+						resizable
+						ellipsis
+						body={(item) => formatEmptyValue(item.description)}
+					/>
+					<DataColumn<IItem>
+						field="_actions"
+						actions
+						actionsAt="end"
+						header=""
+						width={88}
+					/>
+				</TableData>
 			</Stack>
 		</>
 	);
