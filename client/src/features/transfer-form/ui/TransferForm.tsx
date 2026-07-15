@@ -7,6 +7,11 @@ import {
 	type ITransferPayload,
 } from '@/entities/transfer';
 import { notification } from '@/shared/notification';
+import {
+	confirmNegativeBalance,
+	getBalanceAfterDebit,
+	willBalanceGoNegative,
+} from '@/shared/lib/negative-balance';
 import { balanceInputProps, formatBalance } from '@/shared/utils/number-format';
 import { getErrorMessage } from '@/shared/utils/error';
 import {
@@ -179,6 +184,29 @@ export function TransferForm({
 			date: toIsoDate(values.date),
 			comment: values.comment || null,
 		};
+
+		if (fromAccount) {
+			const debitAmount = Number(values.amount);
+			const previousDebit =
+				id && transferData?.fromAccountId === Number(values.fromAccountId)
+					? Number(transferData.amount)
+					: 0;
+
+			if (willBalanceGoNegative(fromAccount.balance, debitAmount, previousDebit)) {
+				const projectedBalance = getBalanceAfterDebit(
+					fromAccount.balance,
+					debitAmount,
+					previousDebit,
+				);
+				const confirmed = await confirmNegativeBalance({
+					accountLabel: fromAccount.label,
+					projectedBalance,
+				});
+				if (!confirmed) {
+					return;
+				}
+			}
+		}
 
 		try {
 			const result = id

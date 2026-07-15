@@ -5,7 +5,8 @@ import {
 	type ITransactionFilters,
 } from '@/entities/transaction';
 import { DataColumn, TableData } from '@/shared/ui/table';
-import { Anchor, ScrollArea } from '@mantine/core';
+import { formatBalance } from '@/shared/utils/number-format';
+import { Anchor, ScrollArea, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -34,11 +35,25 @@ function formatDate(value: string): string {
 	return date.toLocaleString('ru-RU');
 }
 
+function isTransferDebit(transaction: ITransaction): boolean {
+	return transaction.transferId !== null && transaction.type === 'expense';
+}
+
 function formatTransactionType(transaction: ITransaction): string {
 	if (transaction.transferId) {
-		return 'Перевод';
+		return transaction.type === 'expense'
+			? 'Перевод (списание)'
+			: 'Перевод (зачисление)';
 	}
 	return TYPE_LABELS[transaction.type] ?? transaction.type;
+}
+
+function formatTransactionAmount(transaction: ITransaction): string {
+	const formatted = formatBalance(transaction.amount);
+	if (isTransferDebit(transaction)) {
+		return `−${formatted}`;
+	}
+	return formatted;
 }
 
 export function TransactionTableWidget({
@@ -96,7 +111,15 @@ export function TransactionTableWidget({
 					header="Тип"
 					sortable
 					resizable
-					body={(transaction) => formatTransactionType(transaction)}
+					body={(transaction) =>
+						isTransferDebit(transaction) ? (
+							<Text c="red" size="sm">
+								{formatTransactionType(transaction)}
+							</Text>
+						) : (
+							formatTransactionType(transaction)
+						)
+					}
 				/>
 				<DataColumn<ITransaction>
 					field="amount"
@@ -108,10 +131,10 @@ export function TransactionTableWidget({
 						<Anchor
 							component={Link}
 							to={getTransactionEditPath(transaction)}
+							c={isTransferDebit(transaction) ? 'red' : undefined}
+							fw={isTransferDebit(transaction) ? 600 : undefined}
 						>
-							{Number(transaction.amount).toLocaleString('ru-RU', {
-								minimumFractionDigits: 2,
-							})}
+							{formatTransactionAmount(transaction)}
 						</Anchor>
 					)}
 				/>

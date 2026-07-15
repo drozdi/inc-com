@@ -10,6 +10,12 @@ import {
 import { useTransactionCategoriesQuery } from '@/entities/transaction-category';
 import { QrScannerModal } from '@/features/qr-scanner';
 import type { ParsedFiscalQr } from '@/shared/lib/parse-fiscal-qr';
+import {
+	calculateExpenseAmount,
+	confirmNegativeBalance,
+	getBalanceAfterDebit,
+	willBalanceGoNegative,
+} from '@/shared/lib/negative-balance';
 import { notification } from '@/shared/notification';
 import { getErrorMessage } from '@/shared/utils/error';
 import {
@@ -241,6 +247,42 @@ export function TransactionForm({
 
 	async function handleSubmit(values: TransactionFormValues) {
 		const payload = buildPayload(values);
+
+		if (isExpense) {
+			const account = (accountsData?.items ?? []).find(
+				(item) => item.id === Number(values.accountId),
+			);
+
+			if (account) {
+				const debitAmount = calculateExpenseAmount(
+					values.amount,
+					values.isManualAmount,
+					values.items,
+				);
+				const previousDebit =
+					id &&
+					transactionData?.accountId === Number(values.accountId)
+						? Number(transactionData.amount)
+						: 0;
+
+				if (
+					willBalanceGoNegative(account.balance, debitAmount, previousDebit)
+				) {
+					const projectedBalance = getBalanceAfterDebit(
+						account.balance,
+						debitAmount,
+						previousDebit,
+					);
+					const confirmed = await confirmNegativeBalance({
+						accountLabel: account.label,
+						projectedBalance,
+					});
+					if (!confirmed) {
+						return;
+					}
+				}
+			}
+		}
 
 		try {
 			const result = id
