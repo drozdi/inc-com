@@ -6,6 +6,7 @@ import {
 	type ITransfer,
 	type ITransferPayload,
 } from '@/entities/transfer';
+import { useTransactionCategoriesQuery } from '@/entities/transaction-category';
 import { notification } from '@/shared/notification';
 import {
 	confirmNegativeBalance,
@@ -29,6 +30,8 @@ import { useEffect, useMemo } from 'react';
 interface TransferFormValues {
 	fromAccountId: string | null;
 	toAccountId: string | null;
+	outgoingCategoryId: string | null;
+	incomingCategoryId: string | null;
 	amount: number | string;
 	date: Date | null;
 	comment: string;
@@ -69,6 +72,8 @@ export function TransferForm({
 				? String(defaultFromAccountId)
 				: null,
 			toAccountId: null,
+			outgoingCategoryId: null,
+			incomingCategoryId: null,
 			amount: 0,
 			date: new Date(),
 			comment: '',
@@ -89,6 +94,18 @@ export function TransferForm({
 	const accounts = accountsData?.items ?? [];
 	const fromAccountId = form.values.fromAccountId;
 	const toAccountId = form.values.toAccountId;
+	const fromAccountIdNum = fromAccountId ? Number(fromAccountId) : 0;
+	const toAccountIdNum = toAccountId ? Number(toAccountId) : 0;
+	const { data: fromCategoriesData, isFetching: isFromCategoriesFetching } =
+		useTransactionCategoriesQuery(
+			{ accountId: fromAccountIdNum, limit: 100, offset: 0 },
+			{ enabled: fromAccountIdNum > 0 },
+		);
+	const { data: toCategoriesData, isFetching: isToCategoriesFetching } =
+		useTransactionCategoriesQuery(
+			{ accountId: toAccountIdNum, limit: 100, offset: 0 },
+			{ enabled: toAccountIdNum > 0 },
+		);
 
 	const accountOptions = useMemo<AccountSelectOption[]>(
 		() =>
@@ -121,11 +138,36 @@ export function TransferForm({
 		});
 	}, [accountOptions, fromAccountId, fromCurrency]);
 
+	const transferCategoryOptions = (items: ICategory[] | undefined) =>
+		(items ?? [])
+			.filter((category) => category.type === 'transfer')
+			.sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label))
+			.map((category) => ({
+				value: String(category.id),
+				label: category.label,
+			}));
+
+	const outgoingCategoryOptions = useMemo(
+		() => transferCategoryOptions(fromCategoriesData?.items),
+		[fromCategoriesData?.items],
+	);
+
+	const incomingCategoryOptions = useMemo(
+		() => transferCategoryOptions(toCategoriesData?.items),
+		[toCategoriesData?.items],
+	);
+
 	useEffect(() => {
 		if (id && transferData?.id) {
 			form.setValues({
 				fromAccountId: String(transferData.fromAccountId),
 				toAccountId: String(transferData.toAccountId),
+				outgoingCategoryId: transferData.outgoingCategoryId
+					? String(transferData.outgoingCategoryId)
+					: null,
+				incomingCategoryId: transferData.incomingCategoryId
+					? String(transferData.incomingCategoryId)
+					: null,
 				amount: Number(transferData.amount),
 				date: toFormDate(transferData.date),
 				comment: transferData.comment ?? '',
@@ -149,8 +191,47 @@ export function TransferForm({
 
 		if (toAccount && fromCurrency && toAccount.currency !== fromCurrency) {
 			form.setFieldValue('toAccountId', null);
+			form.setFieldValue('incomingCategoryId', null);
 		}
 	}, [fromAccountId, fromCurrency, toAccountId, accounts]);
+
+	useEffect(() => {
+		if (fromAccountIdNum <= 0 || isFromCategoriesFetching) {
+			return;
+		}
+
+		const categoryId = form.values.outgoingCategoryId;
+		if (
+			categoryId &&
+			!outgoingCategoryOptions.some((option) => option.value === categoryId)
+		) {
+			form.setFieldValue('outgoingCategoryId', null);
+		}
+	}, [
+		fromAccountIdNum,
+		isFromCategoriesFetching,
+		outgoingCategoryOptions,
+		form.values.outgoingCategoryId,
+	]);
+
+	useEffect(() => {
+		if (toAccountIdNum <= 0 || isToCategoriesFetching) {
+			return;
+		}
+
+		const categoryId = form.values.incomingCategoryId;
+		if (
+			categoryId &&
+			!incomingCategoryOptions.some((option) => option.value === categoryId)
+		) {
+			form.setFieldValue('incomingCategoryId', null);
+		}
+	}, [
+		toAccountIdNum,
+		isToCategoriesFetching,
+		incomingCategoryOptions,
+		form.values.incomingCategoryId,
+	]);
 
 	async function handleSubmit(values: TransferFormValues) {
 		if (values.fromAccountId === values.toAccountId) {
@@ -183,6 +264,12 @@ export function TransferForm({
 			amount: Number(values.amount).toFixed(2),
 			date: toIsoDate(values.date),
 			comment: values.comment || null,
+			outgoingCategoryId: values.outgoingCategoryId
+				? Number(values.outgoingCategoryId)
+				: null,
+			incomingCategoryId: values.incomingCategoryId
+				? Number(values.incomingCategoryId)
+				: null,
 		};
 
 		if (fromAccount) {
@@ -235,6 +322,8 @@ export function TransferForm({
 				onChange={(value) => {
 					fromAccountProps.onChange(value);
 					form.setFieldValue('toAccountId', null);
+					form.setFieldValue('outgoingCategoryId', null);
+					form.setFieldValue('incomingCategoryId', null);
 				}}
 				searchable
 				required
@@ -267,6 +356,40 @@ export function TransferForm({
 						? `Нет других счетов в валюте ${fromCurrency}`
 						: 'Счета не найдены'
 				}
+				w="100%"
+			/>
+			<Select
+				label="Категория списания"
+				data={outgoingCategoryOptions}
+				{...form.getInputProps('outgoingCategoryId')}
+				searchable
+				clearable
+				disabled={!fromAccountId}
+				placeholder={
+					!fromAccountId
+						? 'Сначала выберите счёт списания'
+						: outgoingCategoryOptions.length
+							? 'Выберите категорию'
+							: 'Нет категорий перевода'
+				}
+				nothingFoundMessage="Категории не найдены"
+				w="100%"
+			/>
+			<Select
+				label="Категория зачисления"
+				data={incomingCategoryOptions}
+				{...form.getInputProps('incomingCategoryId')}
+				searchable
+				clearable
+				disabled={!toAccountId}
+				placeholder={
+					!toAccountId
+						? 'Сначала выберите счёт зачисления'
+						: incomingCategoryOptions.length
+							? 'Выберите категорию'
+							: 'Нет категорий перевода'
+				}
+				nothingFoundMessage="Категории не найдены"
 				w="100%"
 			/>
 			<NumberInput

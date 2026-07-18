@@ -2,7 +2,7 @@ import { api } from '@/shared/api';
 
 export interface ICategoryCopyRequest {
 	targetAccountId: number;
-	type?: 'income' | 'expense';
+	type?: 'income' | 'expense' | 'transfer';
 	categoryIds?: number[];
 }
 

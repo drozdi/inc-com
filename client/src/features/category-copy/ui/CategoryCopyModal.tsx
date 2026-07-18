@@ -84,7 +84,7 @@ export function CategoryCopyModal({
 		try {
 			const result = await requestCategoryCopy(Number(sourceAccountId), {
 				targetAccountId: Number(targetAccountId),
-				type: typeFilter as 'income' | 'expense',
+				type: typeFilter as 'income' | 'expense' | 'transfer',
 				categoryIds: selectedIds,
 			});
 

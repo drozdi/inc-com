@@ -18,6 +18,10 @@ export interface ITransfer {
 
 	incomingTransactionId: number | null;
 
+	outgoingCategoryId: number | null;
+
+	incomingCategoryId: number | null;
+
 }
 
 
@@ -47,6 +51,10 @@ export interface ITransferPayload {
 	date: string;
 
 	comment?: string | null;
+
+	outgoingCategoryId?: number | null;
+
+	incomingCategoryId?: number | null;
 
 }
 

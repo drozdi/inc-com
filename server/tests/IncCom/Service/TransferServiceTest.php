@@ -6,9 +6,11 @@ namespace App\Tests\IncCom\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use IncCom\Entity\Account;
+use IncCom\Entity\Category;
 use IncCom\Entity\Transfer;
 use IncCom\Enum\TransactionType;
 use IncCom\Repository\AccountRepository;
+use IncCom\Repository\CategoryRepository;
 use IncCom\Service\BalanceService;
 use IncCom\Service\TransferService;
 use Main\Entity\User;
@@ -59,7 +61,12 @@ final class TransferServiceTest extends TestCase
             }));
         $em->expects($this->once())->method('flush');
 
-        $service = new TransferService($em, $balanceService, $accountRepository);
+        $service = new TransferService(
+            $em,
+            $balanceService,
+            $accountRepository,
+            $this->createCategoryRepositoryMock(),
+        );
         $transfer = $service->create([
             'fromAccountId' => 1,
             'toAccountId' => 2,
@@ -110,6 +117,7 @@ final class TransferServiceTest extends TestCase
             $em,
             $this->createMock(BalanceService::class),
             $accountRepository,
+            $this->createCategoryRepositoryMock(),
         );
 
         $this->expectException(\InvalidArgumentException::class);
@@ -142,6 +150,7 @@ final class TransferServiceTest extends TestCase
             $em,
             $this->createMock(BalanceService::class),
             $accountRepository,
+            $this->createCategoryRepositoryMock(),
         );
 
         $this->expectException(\InvalidArgumentException::class);
@@ -153,6 +162,106 @@ final class TransferServiceTest extends TestCase
             'amount' => '50.00',
             'date' => '2026-02-01',
         ], $this->createUser(1));
+    }
+
+    public function testCreateAssignsTransferCategoriesToPairedTransactions(): void
+    {
+        $fromAccount = $this->createAccount(1);
+        $toAccount = $this->createAccount(2);
+        $author = $this->createUser(10);
+        $outgoingCategory = $this->createCategory(5, $fromAccount, 'transfer');
+        $incomingCategory = $this->createCategory(6, $toAccount, 'transfer');
+
+        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository->method('find')->willReturnMap([
+            [1, $fromAccount],
+            [2, $toAccount],
+        ]);
+
+        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository->method('find')->willReturnMap([
+            [5, $outgoingCategory],
+            [6, $incomingCategory],
+        ]);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('wrapInTransaction')
+            ->willReturnCallback(static fn (callable $callback) => $callback());
+        $em->expects($this->once())->method('persist');
+        $em->expects($this->once())->method('flush');
+
+        $service = new TransferService(
+            $em,
+            $this->createMock(BalanceService::class),
+            $accountRepository,
+            $categoryRepository,
+        );
+
+        $transfer = $service->create([
+            'fromAccountId' => 1,
+            'toAccountId' => 2,
+            'amount' => '50.00',
+            'date' => '2026-02-01 14:30:00',
+            'outgoingCategoryId' => 5,
+            'incomingCategoryId' => 6,
+        ], $author);
+
+        $this->assertSame($outgoingCategory, $transfer->getOutgoingTransaction()?->getCategory());
+        $this->assertSame($incomingCategory, $transfer->getIncomingTransaction()?->getCategory());
+    }
+
+    public function testCreateRejectsCategoryFromWrongAccount(): void
+    {
+        $fromAccount = $this->createAccount(1);
+        $toAccount = $this->createAccount(2);
+        $wrongCategory = $this->createCategory(5, $toAccount, 'transfer');
+
+        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository->method('find')->willReturnMap([
+            [1, $fromAccount],
+            [2, $toAccount],
+        ]);
+
+        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository->method('find')->willReturn($wrongCategory);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('wrapInTransaction')
+            ->willReturnCallback(static fn (callable $callback) => $callback());
+
+        $service = new TransferService(
+            $em,
+            $this->createMock(BalanceService::class),
+            $accountRepository,
+            $categoryRepository,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Category does not belong to the account.');
+
+        $service->create([
+            'fromAccountId' => 1,
+            'toAccountId' => 2,
+            'amount' => '50.00',
+            'date' => '2026-02-01',
+            'outgoingCategoryId' => 5,
+        ], $this->createUser(1));
+    }
+
+    private function createCategoryRepositoryMock(): CategoryRepository
+    {
+        return $this->createMock(CategoryRepository::class);
+    }
+
+    private function createCategory(int $id, Account $account, string $type): Category
+    {
+        $category = new Category();
+        $category->setLabel('Category '.$id);
+        $category->setType($type);
+        $category->setAccount($account);
+        $this->setEntityId($category, $id);
+
+        return $category;
     }
 
     private function createAccount(int $id, string $currency = 'RUB'): Account
